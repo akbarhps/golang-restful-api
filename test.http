@@ -1,0 +1,65 @@
+### Register User
+POST http://localhost:3000/api/user
+Content-Type: application/json
+Accept: application/json
+
+{
+  "full_name": "test e2e",
+  "username": "teste2e",
+  "email": "teste2e@test.com",
+  "password": "teste2e"
+}
+
+### Login User
+POST http://localhost:3000/api/user/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "username": "teste2e",
+  "password": "teste2e"
+}
+
+### Find User
+GET http://localhost:3000/api/user/teste2e
+Content-Type: application/json
+Accept: application/json
+
+
+### Update User
+PUT http://localhost:3000/api/user/profile
+Content-Type: application/json
+Accept: application/json
+
+{
+  "id": "bfbdcff8-4302-11ec-8a7c-0250f2c79000",
+  "full_name": "test e2e update",
+  "username": "teste2eupdt",
+  "email": "teste2eupdate@test.com"
+}
+
+### Update User Password
+PUT http://localhost:3000/api/user/password
+Content-Type: application/json
+Accept: application/json
+
+{
+  "id": "bfbdcff8-4302-11ec-8a7c-0250f2c79000",
+  "full_name": "test e2e update",
+  "username": "teste2eupdt",
+  "email": "teste2eupdate@test.com",
+  "old_password": "teste2e",
+  "new_password": "teste2eupt"
+}
+
+### Delete User
+DELETE http://localhost:3000/api/user/
+Content-Type: application/json
+Accept: application/json
+
+{
+  "id": "2a475709-42ff-11ec-a50f-0250f2c79000",
+  "username": "teste2eupdt",
+  "email": "teste2eupdate@test.com",
+  "password": "teste2eupt"
+}
