@@ -14,7 +14,7 @@ import (
 
 func setup() UserRepository {
 	db := app.NewDatabase("test")
-	repository := NewUserRepositoryImpl(db)
+	repository := NewUserRepository(db)
 
 	err := repository.DeleteAll(context.Background())
 	if err != nil {

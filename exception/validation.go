@@ -1,11 +1,18 @@
 package exception
 
 type (
-	WrongCredentialError struct {
+	InvalidCredentialError struct {
+		Message string
+	}
+	InvalidSignatureError struct {
 		Message string
 	}
 )
 
-func (e WrongCredentialError) Error() string {
+func (e InvalidCredentialError) Error() string {
+	return e.Message
+}
+
+func (e InvalidSignatureError) Error() string {
 	return e.Message
 }

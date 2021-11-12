@@ -21,14 +21,14 @@ type (
 	}
 
 	UserUpdateProfileRequest struct {
-		Id       uuid.UUID `validate:"required" json:"id"`
+		Id       uuid.UUID `json:"id"`
 		FullName string    `validate:"required,max=200,min=1" json:"full_name"`
 		Username string    `validate:"required,min=1,max=16" json:"username"`
 		Email    string    `validate:"required,email" json:"email"`
 	}
 
 	UserUpdatePasswordRequest struct {
-		Id          uuid.UUID `validate:"required,min=1,max=16" json:"id"`
+		Id          uuid.UUID `json:"id"`
 		Username    string    `validate:"required,min=1,max=16" json:"username"`
 		Email       string    `validate:"required,email" json:"email"`
 		OldPassword string    `validate:"required,min=6" json:"old_password"`
@@ -36,7 +36,7 @@ type (
 	}
 
 	UserDeleteRequest struct {
-		Id       uuid.UUID `validate:"required,min=1,max=16" json:"id"`
+		Id       uuid.UUID `json:"id"`
 		Username string    `validate:"required,min=1,max=16" json:"username"`
 		Email    string    `validate:"required,email" json:"email"`
 		Password string    `validate:"required,min=6" json:"password"`

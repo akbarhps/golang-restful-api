@@ -12,7 +12,7 @@ import (
 
 func main() {
 	db := app.NewDatabase("prod")
-	userRepository := repository.NewUserRepositoryImpl(db)
+	userRepository := repository.NewUserRepository(db)
 	userService := service.NewUserService(validator.New(), userRepository)
 	userController := controller.NewUserController(userService)
 

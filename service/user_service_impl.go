@@ -68,6 +68,7 @@ func (service *UserServiceImpl) Register(ctx context.Context, req *model.UserReg
 }
 
 func (service *UserServiceImpl) Login(ctx context.Context, req *model.UserLoginRequest) (*model.UserResponse, error) {
+	fmt.Println(req)
 	err := service.Validate.Struct(req)
 	if err != nil {
 		return nil, err
@@ -86,7 +87,7 @@ func (service *UserServiceImpl) Login(ctx context.Context, req *model.UserLoginR
 
 	err = bcrypt.CompareHashAndPassword([]byte(users[0].Password), []byte(req.Password))
 	if err != nil {
-		return nil, exception.WrongCredentialError{Message: "Incorrect password"}
+		return nil, exception.InvalidCredentialError{Message: "Incorrect password"}
 	}
 
 	return users[0].ToResponse(), nil
@@ -155,7 +156,6 @@ func (service *UserServiceImpl) UpdatePassword(ctx context.Context, req *model.U
 		Username: req.Username,
 	})
 	if err != nil {
-		fmt.Println("Error di find")
 		return nil, err
 	}
 	if len(users) == 0 {
@@ -166,12 +166,11 @@ func (service *UserServiceImpl) UpdatePassword(ctx context.Context, req *model.U
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.OldPassword))
 	if err != nil {
-		return nil, exception.WrongCredentialError{Message: "Old password didn't match"}
+		return nil, exception.InvalidCredentialError{Message: "Old password didn't match"}
 	}
 
 	encrypt, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
-		fmt.Println("Error di generate")
 		return nil, err
 	}
 
@@ -179,7 +178,6 @@ func (service *UserServiceImpl) UpdatePassword(ctx context.Context, req *model.U
 
 	err = service.Repository.Update(ctx, user)
 	if err != nil {
-		fmt.Println("error di update")
 		return nil, err
 	}
 
@@ -208,7 +206,7 @@ func (service *UserServiceImpl) Delete(ctx context.Context, req *model.UserDelet
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
 	if err != nil {
-		return exception.WrongCredentialError{Message: "Incorrect password"}
+		return exception.InvalidCredentialError{Message: "Incorrect password"}
 	}
 
 	err = service.Repository.Delete(ctx, user)

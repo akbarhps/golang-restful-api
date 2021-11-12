@@ -26,7 +26,13 @@ func internalServerError(res *model.WebResponse, err string) {
 	res.Error = err
 }
 
-func PanicHandler(c *gin.Context, err interface{}) {
+func unauthorizedError(res *model.WebResponse, err string) {
+	res.Code = http.StatusUnauthorized
+	res.Status = "Unauthorized Access"
+	res.Error = err
+}
+
+func ErrorHandler(c *gin.Context, err interface{}) {
 	res := &model.WebResponse{}
 
 	switch err.(type) {
@@ -36,8 +42,10 @@ func PanicHandler(c *gin.Context, err interface{}) {
 		notFound(res, err.(RecordNotFoundError).Error())
 	case validator.ValidationErrors:
 		badRequest(res, err.(validator.ValidationErrors).Error())
-	case WrongCredentialError:
-		badRequest(res, err.(WrongCredentialError).Error())
+	case InvalidCredentialError:
+		badRequest(res, err.(InvalidCredentialError).Error())
+	case InvalidSignatureError:
+		unauthorizedError(res, err.(InvalidSignatureError).Error())
 	case error:
 		internalServerError(res, err.(error).Error())
 	}
