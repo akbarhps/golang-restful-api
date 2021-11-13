@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go-api/app"
 	"go-api/domain"
 	"go-api/model"
 	"go-api/repository"
@@ -14,32 +15,36 @@ import (
 	"time"
 )
 
+var (
+	db = app.NewDatabase("test")
+
+	responseDomain = domain.User{
+		Id:        uuid.New(),
+		FullName:  "test controller",
+		Username:  "testctrl",
+		Email:     "testctrl@test.com",
+		Password:  generatePassword(),
+		CreatedAt: time.Now(),
+	}
+
+	rawDomain = domain.User{
+		Id:        uuid.New(),
+		FullName:  "test controller",
+		Username:  "testctrl",
+		Email:     "testctrl@test.com",
+		Password:  "testctrl",
+		CreatedAt: time.Now(),
+	}
+)
+
 func generatePassword() string {
 	encrypt, _ := bcrypt.GenerateFromPassword([]byte("testctrl"), bcrypt.DefaultCost)
 	return string(encrypt)
 }
 
-var responseDomain = domain.User{
-	Id:        uuid.New(),
-	FullName:  "test controller",
-	Username:  "testctrl",
-	Email:     "testctrl@test.com",
-	Password:  generatePassword(),
-	CreatedAt: time.Now(),
-}
-
-var rawDomain = domain.User{
-	Id:        uuid.New(),
-	FullName:  "test controller",
-	Username:  "testctrl",
-	Email:     "testctrl@test.com",
-	Password:  "testctrl",
-	CreatedAt: time.Now(),
-}
-
 func setup() (UserService, *repository.UserRepositoryMock) {
 	userRepository := repository.UserRepositoryMock{Mock: mock.Mock{}}
-	userService := NewUserService(validator.New(), &userRepository)
+	userService := NewUserService(db, validator.New(), &userRepository)
 
 	return userService, &userRepository
 }
@@ -93,7 +98,7 @@ func TestUserServiceImpl_Register(t *testing.T) {
 		userRepository.Mock.On("Find", context.Background(), &domain.User{
 			Email:    rawDomain.Email,
 			Username: rawDomain.Username,
-		}).Return([]domain.User{rawDomain})
+		}).Return([]domain.User{responseDomain})
 
 		assert.PanicsWithError(t, "Username or Email already taken", func() {
 			res := userService.Register(context.Background(), &model.UserRegister{

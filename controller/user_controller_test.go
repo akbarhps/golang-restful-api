@@ -3,6 +3,7 @@ package controller
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"github.com/golang-jwt/jwt"
 	"go-api/app"
@@ -41,6 +42,8 @@ type userTest struct {
 }
 
 var (
+	db = app.NewDatabase("test")
+
 	userTestValid = &userTest{
 		FullName:    "test controller",
 		Username:    "testctrl",
@@ -80,6 +83,12 @@ var (
 	}
 )
 
+func clearRecord() *sql.Tx {
+	tx, _ := db.Begin()
+	userRepository.DeleteAll(context.Background(), tx)
+	return tx
+}
+
 func registerDummyUser() *model.UserResponse {
 	response := userService.Register(context.Background(), &model.UserRegister{
 		FullName: "test controller",
@@ -110,9 +119,8 @@ func TestMain(m *testing.M) {
 	r.Use(middleware.JWTValidator())
 	r.Use(gin.CustomRecovery(middleware.PanicHandler))
 
-	db := app.NewDatabase("test")
-	userRepository = repository.NewUserRepository(db)
-	userService = service.NewUserService(validator.New(), userRepository)
+	userRepository = repository.NewUserRepository()
+	userService = service.NewUserService(db, validator.New(), userRepository)
 	userController = NewUserController(userService)
 	userController.SetRoutes(r)
 
@@ -121,7 +129,8 @@ func TestMain(m *testing.M) {
 
 func TestUserControllerImpl_Register(t *testing.T) {
 	t.Run("register success should return user data and cookie", func(t *testing.T) {
-		userRepository.DeleteAll(context.Background())
+		tx := clearRecord()
+		helper.TXCommitOrRollback(tx)
 		requestJSON := generateUserJSON(userTestValid)
 
 		req := httptest.NewRequest(http.MethodPost, UserPathRegister, requestJSON)
@@ -147,7 +156,8 @@ func TestUserControllerImpl_Register(t *testing.T) {
 	})
 
 	t.Run("register using bad input should get bad request, empty data, and no cookie", func(t *testing.T) {
-		userRepository.DeleteAll(context.Background())
+		tx := clearRecord()
+		helper.TXCommitOrRollback(tx)
 		requestJSON := generateUserJSON(userTestInvalid)
 
 		req := httptest.NewRequest(http.MethodPost, UserPathRegister, requestJSON)
@@ -173,7 +183,8 @@ func TestUserControllerImpl_Register(t *testing.T) {
 	})
 
 	t.Run("register using registered email or username should get bad request, empty data, and no cookie", func(t *testing.T) {
-		userRepository.DeleteAll(context.Background())
+		tx := clearRecord()
+		helper.TXCommitOrRollback(tx)
 		registerDummyUser()
 		requestJSON := generateUserJSON(userTestValid)
 
@@ -202,7 +213,8 @@ func TestUserControllerImpl_Register(t *testing.T) {
 
 func TestUserControllerImpl_Login(t *testing.T) {
 	t.Run("login using valid credential should get ok, user data and cookie", func(t *testing.T) {
-		userRepository.DeleteAll(context.Background())
+		tx := clearRecord()
+		helper.TXCommitOrRollback(tx)
 		registerDummyUser()
 		requestJSON := generateUserJSON(userTestValid)
 
@@ -229,7 +241,8 @@ func TestUserControllerImpl_Login(t *testing.T) {
 	})
 
 	t.Run("login using not registered user should get not found, empty data, and no cookie", func(t *testing.T) {
-		userRepository.DeleteAll(context.Background())
+		tx := clearRecord()
+		helper.TXCommitOrRollback(tx)
 		requestJSON := generateUserJSON(userTestValid)
 
 		req := httptest.NewRequest(http.MethodPost, UserPathLogin, requestJSON)
@@ -255,7 +268,8 @@ func TestUserControllerImpl_Login(t *testing.T) {
 	})
 
 	t.Run("login using wrong password should get bad request, no data, and no cookie", func(t *testing.T) {
-		userRepository.DeleteAll(context.Background())
+		tx := clearRecord()
+		helper.TXCommitOrRollback(tx)
 		registerDummyUser()
 
 		requestJSON := generateUserJSON(userTestWrongPassword)
@@ -283,7 +297,8 @@ func TestUserControllerImpl_Login(t *testing.T) {
 	})
 
 	t.Run("login using bad input should get bad request, no data and no cookie", func(t *testing.T) {
-		userRepository.DeleteAll(context.Background())
+		tx := clearRecord()
+		helper.TXCommitOrRollback(tx)
 		requestJSON := generateUserJSON(userTestInvalid)
 
 		req := httptest.NewRequest(http.MethodPost, UserPathLogin, requestJSON)
@@ -314,7 +329,8 @@ func TestUserControllerImpl_Find(t *testing.T) {
 	path := strings.Replace(UserPathFind, ":key", "", 1)
 
 	t.Run("find user should get ok, data array of users", func(t *testing.T) {
-		userRepository.DeleteAll(context.Background())
+		tx := clearRecord()
+		helper.TXCommitOrRollback(tx)
 		dummyResponse := registerDummyUser()
 		token, err := helper.GenerateJWT(dummyResponse)
 		assert.NoError(t, err)
@@ -362,7 +378,8 @@ func TestUserControllerImpl_Find(t *testing.T) {
 	})
 
 	t.Run("find non-exist user should get ok and empty array data", func(t *testing.T) {
-		userRepository.DeleteAll(context.Background())
+		tx := clearRecord()
+		helper.TXCommitOrRollback(tx)
 		dummyResponse := registerDummyUser()
 		token, err := helper.GenerateJWT(dummyResponse)
 		assert.NoError(t, err)
@@ -391,7 +408,8 @@ func TestUserControllerImpl_Find(t *testing.T) {
 
 func TestUserControllerImpl_UpdateProfile(t *testing.T) {
 	t.Run("update profile with valid input should get ok and data of updated user", func(t *testing.T) {
-		userRepository.DeleteAll(context.Background())
+		tx := clearRecord()
+		helper.TXCommitOrRollback(tx)
 		dummyResponse := registerDummyUser()
 		token, err := helper.GenerateJWT(dummyResponse)
 		assert.NoError(t, err)
@@ -425,7 +443,8 @@ func TestUserControllerImpl_UpdateProfile(t *testing.T) {
 	})
 
 	t.Run("update user with no signature (jwt) should get unauthorized and empty data", func(t *testing.T) {
-		userRepository.DeleteAll(context.Background())
+		tx := clearRecord()
+		helper.TXCommitOrRollback(tx)
 		req := httptest.NewRequest(http.MethodPut, UserPathUpdateProfile, nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
@@ -448,7 +467,8 @@ func TestUserControllerImpl_UpdateProfile(t *testing.T) {
 	})
 
 	t.Run("update profile with bad format should get bad request and empty data", func(t *testing.T) {
-		userRepository.DeleteAll(context.Background())
+		tx := clearRecord()
+		helper.TXCommitOrRollback(tx)
 		dummyResponse := registerDummyUser()
 		token, err := helper.GenerateJWT(dummyResponse)
 		assert.NoError(t, err)
@@ -481,7 +501,8 @@ func TestUserControllerImpl_UpdateProfile(t *testing.T) {
 
 func TestUserControllerImpl_UpdatePassword(t *testing.T) {
 	t.Run("update password success should get ok and no error", func(t *testing.T) {
-		userRepository.DeleteAll(context.Background())
+		tx := clearRecord()
+		helper.TXCommitOrRollback(tx)
 
 		requestJSON := generateUserJSON(userTestUpdate)
 		dummyResponse := registerDummyUser()
@@ -533,7 +554,8 @@ func TestUserControllerImpl_UpdatePassword(t *testing.T) {
 	})
 
 	t.Run("update password with bad format input should get bad request and error", func(t *testing.T) {
-		userRepository.DeleteAll(context.Background())
+		tx := clearRecord()
+		helper.TXCommitOrRollback(tx)
 		dummyResponse := registerDummyUser()
 		token, err := helper.GenerateJWT(dummyResponse)
 		assert.NoError(t, err)
@@ -563,7 +585,8 @@ func TestUserControllerImpl_UpdatePassword(t *testing.T) {
 	})
 
 	t.Run("update password using wrong old password should get bad request and error", func(t *testing.T) {
-		userRepository.DeleteAll(context.Background())
+		tx := clearRecord()
+		helper.TXCommitOrRollback(tx)
 
 		requestJSON := generateUserJSON(userTestWrongPassword)
 		dummyResponse := registerDummyUser()
@@ -595,7 +618,8 @@ func TestUserControllerImpl_UpdatePassword(t *testing.T) {
 
 func TestUserControllerImpl_Delete(t *testing.T) {
 	t.Run("delete using valid input should get ok and no error", func(t *testing.T) {
-		userRepository.DeleteAll(context.Background())
+		tx := clearRecord()
+		helper.TXCommitOrRollback(tx)
 		requestJSON := generateUserJSON(userTestValid)
 		dummyResponse := registerDummyUser()
 		token, err := helper.GenerateJWT(dummyResponse)
@@ -624,7 +648,8 @@ func TestUserControllerImpl_Delete(t *testing.T) {
 	})
 
 	t.Run("delete using no signature (jwt) should get unauthorized and error", func(t *testing.T) {
-		userRepository.DeleteAll(context.Background())
+		tx := clearRecord()
+		helper.TXCommitOrRollback(tx)
 		req := httptest.NewRequest(http.MethodDelete, UserPathDelete, nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
@@ -647,7 +672,8 @@ func TestUserControllerImpl_Delete(t *testing.T) {
 	})
 
 	t.Run("delete using invalid input should get bad request and error", func(t *testing.T) {
-		userRepository.DeleteAll(context.Background())
+		tx := clearRecord()
+		helper.TXCommitOrRollback(tx)
 		requestJSON := generateUserJSON(userTestInvalid)
 		dummyResponse := registerDummyUser()
 		token, err := helper.GenerateJWT(dummyResponse)
@@ -676,7 +702,8 @@ func TestUserControllerImpl_Delete(t *testing.T) {
 	})
 
 	t.Run("delete using wrong old password should get bad request and error", func(t *testing.T) {
-		userRepository.DeleteAll(context.Background())
+		tx := clearRecord()
+		helper.TXCommitOrRollback(tx)
 
 		requestJSON := generateUserJSON(userTestUpdate)
 		dummyResponse := registerDummyUser()

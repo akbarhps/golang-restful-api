@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"go-api/domain"
 	"go-api/exception"
 	"go-api/helper"
@@ -15,19 +16,24 @@ import (
 )
 
 type UserServiceImpl struct {
+	DB         *sql.DB
 	Validate   *validator.Validate
 	Repository repository.UserRepository
 }
 
-func NewUserService(validate *validator.Validate, repository repository.UserRepository) UserService {
-	return &UserServiceImpl{Validate: validate, Repository: repository}
+func NewUserService(DB *sql.DB, validate *validator.Validate, repository repository.UserRepository) UserService {
+	return &UserServiceImpl{DB: DB, Validate: validate, Repository: repository}
 }
 
-func (service *UserServiceImpl) Register(ctx context.Context, req *model.UserRegister) *model.UserResponse {
-	err := service.Validate.Struct(req)
+func (s *UserServiceImpl) Register(ctx context.Context, req *model.UserRegister) *model.UserResponse {
+	err := s.Validate.Struct(req)
 	helper.PanicIfError(err)
 
-	users := service.Repository.Find(ctx, &domain.User{
+	tx, err := s.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.TXCommitOrRollback(tx)
+
+	users := s.Repository.Find(ctx, tx, &domain.User{
 		Email:    req.Email,
 		Username: req.Username,
 	})
@@ -50,15 +56,19 @@ func (service *UserServiceImpl) Register(ctx context.Context, req *model.UserReg
 		CreatedAt: time.Now(),
 	}
 
-	service.Repository.Create(ctx, user)
+	s.Repository.Create(ctx, tx, user)
 	return user.ToResponse()
 }
 
-func (service *UserServiceImpl) Login(ctx context.Context, req *model.UserLogin) *model.UserResponse {
-	err := service.Validate.Struct(req)
+func (s *UserServiceImpl) Login(ctx context.Context, req *model.UserLogin) *model.UserResponse {
+	err := s.Validate.Struct(req)
 	helper.PanicIfError(err)
 
-	users := service.Repository.Find(ctx, &domain.User{
+	tx, err := s.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.TXCommitOrRollback(tx)
+
+	users := s.Repository.Find(ctx, tx, &domain.User{
 		Email:    req.Email,
 		Username: req.Username,
 	})
@@ -72,8 +82,12 @@ func (service *UserServiceImpl) Login(ctx context.Context, req *model.UserLogin)
 	return users[0].ToResponse()
 }
 
-func (service *UserServiceImpl) Find(ctx context.Context, req *model.UserFind) []model.UserResponse {
-	users := service.Repository.Find(ctx, &domain.User{
+func (s *UserServiceImpl) Find(ctx context.Context, req *model.UserFind) []model.UserResponse {
+	tx, err := s.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.TXCommitOrRollback(tx)
+
+	users := s.Repository.Find(ctx, tx, &domain.User{
 		FullName: req.FullName,
 		Username: req.Username,
 		Email:    req.Email,
@@ -87,11 +101,15 @@ func (service *UserServiceImpl) Find(ctx context.Context, req *model.UserFind) [
 	return responseUsers
 }
 
-func (service *UserServiceImpl) UpdateProfile(ctx context.Context, req *model.UserUpdateProfile) *model.UserResponse {
-	err := service.Validate.Struct(req)
+func (s *UserServiceImpl) UpdateProfile(ctx context.Context, req *model.UserUpdateProfile) *model.UserResponse {
+	err := s.Validate.Struct(req)
 	helper.PanicIfError(err)
 
-	users := service.Repository.Find(ctx, &domain.User{
+	tx, err := s.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.TXCommitOrRollback(tx)
+
+	users := s.Repository.Find(ctx, tx, &domain.User{
 		Id:       req.Id,
 		Email:    req.Email,
 		Username: req.Username,
@@ -105,15 +123,19 @@ func (service *UserServiceImpl) UpdateProfile(ctx context.Context, req *model.Us
 	user.Username = req.Username
 	user.Email = req.Email
 
-	service.Repository.Update(ctx, user)
+	s.Repository.Update(ctx, tx, user)
 	return user.ToResponse()
 }
 
-func (service *UserServiceImpl) UpdatePassword(ctx context.Context, req *model.UserUpdatePassword) {
-	err := service.Validate.Struct(req)
+func (s *UserServiceImpl) UpdatePassword(ctx context.Context, req *model.UserUpdatePassword) {
+	err := s.Validate.Struct(req)
 	helper.PanicIfError(err)
 
-	users := service.Repository.Find(ctx, &domain.User{
+	tx, err := s.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.TXCommitOrRollback(tx)
+
+	users := s.Repository.Find(ctx, tx, &domain.User{
 		Id:       req.Id,
 		Email:    req.Email,
 		Username: req.Username,
@@ -131,14 +153,18 @@ func (service *UserServiceImpl) UpdatePassword(ctx context.Context, req *model.U
 	helper.PanicIfError(err)
 
 	user.Password = string(encrypt)
-	service.Repository.Update(ctx, user)
+	s.Repository.Update(ctx, tx, user)
 }
 
-func (service *UserServiceImpl) Delete(ctx context.Context, req *model.UserDelete) {
-	err := service.Validate.Struct(req)
+func (s *UserServiceImpl) Delete(ctx context.Context, req *model.UserDelete) {
+	err := s.Validate.Struct(req)
 	helper.PanicIfError(err)
 
-	users := service.Repository.Find(ctx, &domain.User{
+	tx, err := s.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.TXCommitOrRollback(tx)
+
+	users := s.Repository.Find(ctx, tx, &domain.User{
 		Id:       req.Id,
 		Email:    req.Email,
 		Username: req.Username,
@@ -150,5 +176,5 @@ func (service *UserServiceImpl) Delete(ctx context.Context, req *model.UserDelet
 	err = bcrypt.CompareHashAndPassword([]byte(users[0].Password), []byte(req.Password))
 	helper.PanicIfError(err, exception.InvalidCredentialError{Message: "Invalid password"})
 
-	service.Repository.Delete(ctx, &users[0])
+	s.Repository.Delete(ctx, tx, &users[0])
 }
