@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"go-api/domain"
 	"go-api/exception"
+	"go-api/helper"
 	"go-api/model"
 	"go-api/repository"
 	"time"
@@ -23,32 +23,23 @@ func NewUserService(validate *validator.Validate, repository repository.UserRepo
 	return &UserServiceImpl{Validate: validate, Repository: repository}
 }
 
-func (service *UserServiceImpl) Register(ctx context.Context, req *model.UserRegisterRequest) (*model.UserResponse, error) {
+func (service *UserServiceImpl) Register(ctx context.Context, req *model.UserRegisterRequest) *model.UserResponse {
 	err := service.Validate.Struct(req)
-	if err != nil {
-		return nil, err
-	}
+	helper.PanicIfError(err)
 
-	users, err := service.Repository.Find(ctx, &domain.User{
+	users := service.Repository.Find(ctx, &domain.User{
 		Email:    req.Email,
 		Username: req.Username,
 	})
-	if err != nil {
-		return nil, err
-	}
 	if len(users) > 0 {
-		return nil, exception.RecordDuplicateError{Message: "Username or Email already taken"}
+		panic(exception.RecordDuplicateError{Message: "Username or Email already taken"})
 	}
 
 	uid, err := uuid.NewUUID()
-	if err != nil {
-		return nil, err
-	}
+	helper.PanicIfError(err)
 
 	encrypt, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, err
-	}
+	helper.PanicIfError(err)
 
 	user := &domain.User{
 		Id:        uid,
@@ -59,76 +50,54 @@ func (service *UserServiceImpl) Register(ctx context.Context, req *model.UserReg
 		CreatedAt: time.Now(),
 	}
 
-	err = service.Repository.Create(ctx, user)
-	if err != nil {
-		return nil, exception.RecordDuplicateError{Message: err.Error()}
-	}
-
-	return user.ToResponse(), nil
+	service.Repository.Create(ctx, user)
+	return user.ToResponse()
 }
 
-func (service *UserServiceImpl) Login(ctx context.Context, req *model.UserLoginRequest) (*model.UserResponse, error) {
-	fmt.Println(req)
+func (service *UserServiceImpl) Login(ctx context.Context, req *model.UserLoginRequest) *model.UserResponse {
 	err := service.Validate.Struct(req)
-	if err != nil {
-		return nil, err
-	}
+	helper.PanicIfError(err)
 
-	users, err := service.Repository.Find(ctx, &domain.User{
+	users := service.Repository.Find(ctx, &domain.User{
 		Email:    req.Email,
 		Username: req.Username,
 	})
-	if err != nil {
-		return nil, err
-	}
 	if len(users) == 0 {
-		return nil, exception.RecordNotFoundError{Message: "Record not found"}
+		panic(exception.RecordNotFoundError{Message: "Record not found"})
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(users[0].Password), []byte(req.Password))
-	if err != nil {
-		return nil, exception.InvalidCredentialError{Message: "Incorrect password"}
-	}
+	helper.PanicIfError(err, exception.InvalidCredentialError{Message: "Invalid password"})
 
-	return users[0].ToResponse(), nil
+	return users[0].ToResponse()
 }
 
-func (service *UserServiceImpl) Find(ctx context.Context, req *model.UserFindRequest) ([]model.UserResponse, error) {
-	user := &domain.User{
+func (service *UserServiceImpl) Find(ctx context.Context, req *model.UserFindRequest) []model.UserResponse {
+	users := service.Repository.Find(ctx, &domain.User{
 		FullName: req.FullName,
 		Username: req.Username,
 		Email:    req.Email,
-	}
-
-	users, err := service.Repository.Find(ctx, user)
-	if err != nil {
-		return nil, err
-	}
+	})
 
 	var responseUsers []model.UserResponse
 	for _, user := range users {
 		responseUsers = append(responseUsers, *user.ToResponse())
 	}
 
-	return responseUsers, nil
+	return responseUsers
 }
 
-func (service *UserServiceImpl) UpdateProfile(ctx context.Context, req *model.UserUpdateProfileRequest) (*model.UserResponse, error) {
+func (service *UserServiceImpl) UpdateProfile(ctx context.Context, req *model.UserUpdateProfileRequest) *model.UserResponse {
 	err := service.Validate.Struct(req)
-	if err != nil {
-		return nil, err
-	}
+	helper.PanicIfError(err)
 
-	users, err := service.Repository.Find(ctx, &domain.User{
+	users := service.Repository.Find(ctx, &domain.User{
 		Id:       req.Id,
 		Email:    req.Email,
 		Username: req.Username,
 	})
-	if err != nil {
-		return nil, err
-	}
 	if len(users) == 0 {
-		return nil, exception.RecordNotFoundError{Message: "Record not found"}
+		panic(exception.RecordNotFoundError{Message: "Record not found"})
 	}
 
 	user := &users[0]
@@ -136,83 +105,50 @@ func (service *UserServiceImpl) UpdateProfile(ctx context.Context, req *model.Us
 	user.Username = req.Username
 	user.Email = req.Email
 
-	err = service.Repository.Update(ctx, user)
-	if err != nil {
-		return nil, err
-	}
-
-	return user.ToResponse(), nil
+	service.Repository.Update(ctx, user)
+	return user.ToResponse()
 }
 
-func (service *UserServiceImpl) UpdatePassword(ctx context.Context, req *model.UserUpdatePasswordRequest) (*model.UserResponse, error) {
+func (service *UserServiceImpl) UpdatePassword(ctx context.Context, req *model.UserUpdatePasswordRequest) {
 	err := service.Validate.Struct(req)
-	if err != nil {
-		return nil, err
-	}
+	helper.PanicIfError(err)
 
-	users, err := service.Repository.Find(ctx, &domain.User{
+	users := service.Repository.Find(ctx, &domain.User{
 		Id:       req.Id,
 		Email:    req.Email,
 		Username: req.Username,
 	})
-	if err != nil {
-		return nil, err
-	}
 	if len(users) == 0 {
-		return nil, exception.RecordNotFoundError{Message: "Record not found"}
+		panic(exception.RecordNotFoundError{Message: "Record not found"})
 	}
 
 	user := &users[0]
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.OldPassword))
-	if err != nil {
-		return nil, exception.InvalidCredentialError{Message: "Old password didn't match"}
-	}
+	helper.PanicIfError(err, exception.InvalidCredentialError{Message: "Invalid old password"})
 
 	encrypt, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, err
-	}
+	helper.PanicIfError(err)
 
 	user.Password = string(encrypt)
-
-	err = service.Repository.Update(ctx, user)
-	if err != nil {
-		return nil, err
-	}
-
-	return user.ToResponse(), nil
+	service.Repository.Update(ctx, user)
 }
 
-func (service *UserServiceImpl) Delete(ctx context.Context, req *model.UserDeleteRequest) error {
+func (service *UserServiceImpl) Delete(ctx context.Context, req *model.UserDeleteRequest) {
 	err := service.Validate.Struct(req)
-	if err != nil {
-		return err
-	}
+	helper.PanicIfError(err)
 
-	users, err := service.Repository.Find(ctx, &domain.User{
+	users := service.Repository.Find(ctx, &domain.User{
 		Id:       req.Id,
-		Username: req.Username,
 		Email:    req.Email,
+		Username: req.Username,
 	})
-	if err != nil {
-		return err
-	}
 	if len(users) == 0 {
-		return exception.RecordNotFoundError{Message: "Record not found"}
+		panic(exception.RecordNotFoundError{Message: "Record not found"})
 	}
 
-	user := &users[0]
+	err = bcrypt.CompareHashAndPassword([]byte(users[0].Password), []byte(req.Password))
+	helper.PanicIfError(err, exception.InvalidCredentialError{Message: "Invalid password"})
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
-	if err != nil {
-		return exception.InvalidCredentialError{Message: "Incorrect password"}
-	}
-
-	err = service.Repository.Delete(ctx, user)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	service.Repository.Delete(ctx, &users[0])
 }

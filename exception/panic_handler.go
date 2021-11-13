@@ -1,10 +1,10 @@
 package exception
 
 import (
+	"github.com/gin-gonic/gin"
 	"go-api/model"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator"
 )
 
@@ -32,7 +32,7 @@ func unauthorizedError(res *model.WebResponse, err string) {
 	res.Error = err
 }
 
-func ErrorHandler(c *gin.Context, err interface{}) {
+func PanicHandler(c *gin.Context, err interface{}) {
 	res := &model.WebResponse{}
 
 	switch err.(type) {
@@ -50,5 +50,5 @@ func ErrorHandler(c *gin.Context, err interface{}) {
 		internalServerError(res, err.(error).Error())
 	}
 
-	c.IndentedJSON(res.Code, res)
+	c.AbortWithStatusJSON(res.Code, res)
 }

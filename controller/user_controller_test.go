@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"github.com/golang-jwt/jwt"
 	"go-api/app"
+	"go-api/exception"
 	"go-api/helper"
 	"go-api/middleware"
 	"go-api/model"
@@ -29,6 +30,17 @@ var userController UserController
 var userService service.UserService
 var userRepository repository.UserRepository
 
+type userTest struct {
+	Id          uuid.UUID `json:"id"`
+	FullName    string    `json:"full_name"`
+	Username    string    `json:"username"`
+	Email       string    `json:"email"`
+	Password    string    `json:"password"`
+	OldPassword string    `json:"old_password"`
+	NewPassword string    `json:"new_password"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 var (
 	pathRegister       = "/api/register"
 	pathLogin          = "/api/login"
@@ -37,14 +49,47 @@ var (
 	pathUpdatePassword = "/api/user/password"
 	pathDelete         = "/api/user"
 
-	modeUpdate           = "update"
-	modeBadFormat        = "bad_format"
-	modeGoodFormat       = "good_format"
-	modeWrongOldPassword = "wrong_old_password"
+	userTestValid = &userTest{
+		FullName:    "test controller",
+		Username:    "testctrl",
+		Email:       "testctrl@test.com",
+		Password:    "testctrl",
+		OldPassword: "testctrl",
+		NewPassword: "testctrl",
+		CreatedAt:   time.Now(),
+	}
+	userTestUpdate = &userTest{
+		FullName:    "test controller update",
+		Username:    "testctrlupd",
+		Email:       "testctrlupd@test.com",
+		Password:    "testctrlupd",
+		OldPassword: "testctrl",
+		NewPassword: "testctrlupdt",
+		CreatedAt:   time.Now(),
+	}
+	userTestWrongPassword = &userTest{
+		FullName:    "test controller",
+		Username:    "testctrl",
+		Email:       "testctrl@test.com",
+		Password:    "wrongpswd",
+		OldPassword: "wrongpswd",
+		NewPassword: "testctrl",
+		CreatedAt:   time.Now(),
+	}
+	userTestInvalid = &userTest{
+		Id:          uuid.UUID{},
+		FullName:    "",
+		Username:    "",
+		Email:       "",
+		Password:    "",
+		OldPassword: "",
+		NewPassword: "",
+		CreatedAt:   time.Time{},
+	}
 )
 
 func registerDummyUser() *model.UserResponse {
-	response, _ := userService.Register(context.Background(), &model.UserRegisterRequest{
+	response := userService.Register(context.Background(), &model.UserRegisterRequest{
 		FullName: "test controller",
 		Username: "testctrl",
 		Email:    "testctrl@test.com",
@@ -62,64 +107,15 @@ func generateJWTCookie(token string) *http.Cookie {
 	}
 }
 
-func generateUserJSON(mode string) *bytes.Reader {
-	type UserTest struct {
-		Id          uuid.UUID `json:"id"`
-		FullName    string    `json:"full_name"`
-		Username    string    `json:"username"`
-		Email       string    `json:"email"`
-		Password    string    `json:"password"`
-		OldPassword string    `json:"old_password"`
-		NewPassword string    `json:"new_password"`
-		CreatedAt   time.Time `json:"created_at"`
-	}
-
-	var user UserTest
-	if mode == modeBadFormat {
-		user = UserTest{
-			FullName:  "troller",
-			Username:  "trl",
-			Email:     "trltest.com",
-			Password:  "trl",
-			CreatedAt: time.Now(),
-		}
-	} else if mode == modeWrongOldPassword {
-		user = UserTest{
-			FullName:    "test controller update",
-			Username:    "testctrlupd",
-			Email:       "testctrlupd@test.com",
-			Password:    "testctrlupd",
-			OldPassword: "wrongpasswrd",
-			NewPassword: "testctrlupdt",
-			CreatedAt:   time.Now(),
-		}
-	} else if mode == modeUpdate {
-		user = UserTest{
-			FullName:    "test controller update",
-			Username:    "testctrlupd",
-			Email:       "testctrlupd@test.com",
-			Password:    "testctrlupd",
-			OldPassword: "testctrl",
-			NewPassword: "testctrlupdt",
-			CreatedAt:   time.Now(),
-		}
-	} else {
-		user = UserTest{
-			FullName:  "test controller",
-			Username:  "testctrl",
-			Email:     "testctrl@test.com",
-			Password:  "testctrl",
-			CreatedAt: time.Now(),
-		}
-	}
-
-	userJSON, _ := json.Marshal(user)
+func generateUserJSON(userTest *userTest) *bytes.Reader {
+	userJSON, _ := json.Marshal(userTest)
 	return bytes.NewReader(userJSON)
 }
 
 func TestMain(m *testing.M) {
 	router = gin.Default()
 	router.Use(middleware.JWTValidator())
+	router.Use(gin.CustomRecovery(exception.PanicHandler))
 
 	db := app.NewDatabase("test")
 	userRepository = repository.NewUserRepository(db)
@@ -137,12 +133,12 @@ func TestMain(m *testing.M) {
 }
 
 func TestUserControllerImpl_Register(t *testing.T) {
-	requestJSON := generateUserJSON(modeGoodFormat)
+	requestJSON := generateUserJSON(userTestValid)
 	webResponse := &model.WebResponse{}
 
-	t.Run("Register Success", func(t *testing.T) {
-		_ = userRepository.DeleteAll(context.Background())
-		requestJSON = generateUserJSON(modeGoodFormat)
+	t.Run("register success should return user data and cookie", func(t *testing.T) {
+		userRepository.DeleteAll(context.Background())
+		requestJSON = generateUserJSON(userTestValid)
 
 		req := httptest.NewRequest(http.MethodPost, pathRegister, requestJSON)
 		w := httptest.NewRecorder()
@@ -165,9 +161,9 @@ func TestUserControllerImpl_Register(t *testing.T) {
 		t.Log(webResponse)
 	})
 
-	t.Run("Register Bad Format Input", func(t *testing.T) {
-		_ = userRepository.DeleteAll(context.Background())
-		requestJSON = generateUserJSON(modeBadFormat)
+	t.Run("register using bad input should get bad request, empty data, and no cookie", func(t *testing.T) {
+		userRepository.DeleteAll(context.Background())
+		requestJSON = generateUserJSON(userTestInvalid)
 
 		req := httptest.NewRequest(http.MethodPost, pathRegister, requestJSON)
 		w := httptest.NewRecorder()
@@ -190,10 +186,10 @@ func TestUserControllerImpl_Register(t *testing.T) {
 		t.Log(webResponse)
 	})
 
-	t.Run("Duplicate Email Or Password", func(t *testing.T) {
-		_ = userRepository.DeleteAll(context.Background())
+	t.Run("register using registered email or username should get bad request, empty data, and no cookie", func(t *testing.T) {
+		userRepository.DeleteAll(context.Background())
 		registerDummyUser()
-		requestJSON = generateUserJSON(modeGoodFormat)
+		requestJSON = generateUserJSON(userTestValid)
 
 		req := httptest.NewRequest(http.MethodPost, pathRegister, requestJSON)
 		w := httptest.NewRecorder()
@@ -218,13 +214,10 @@ func TestUserControllerImpl_Register(t *testing.T) {
 }
 
 func TestUserControllerImpl_Login(t *testing.T) {
-	requestJSON := generateUserJSON(modeGoodFormat)
-	webResponse := &model.WebResponse{}
-
-	t.Run("Login Success", func(t *testing.T) {
-		_ = userRepository.DeleteAll(context.Background())
+	t.Run("login using valid credential should get ok, user data and cookie", func(t *testing.T) {
+		userRepository.DeleteAll(context.Background())
 		registerDummyUser()
-		requestJSON = generateUserJSON(modeGoodFormat)
+		requestJSON := generateUserJSON(userTestValid)
 
 		req := httptest.NewRequest(http.MethodPost, pathLogin, requestJSON)
 		w := httptest.NewRecorder()
@@ -238,7 +231,8 @@ func TestUserControllerImpl_Login(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, resBody)
 
-		err = json.Unmarshal(resBody, webResponse)
+		var webResponse model.WebResponse
+		err = json.Unmarshal(resBody, &webResponse)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, webResponse.Data)
 		assert.Empty(t, webResponse.Error)
@@ -247,9 +241,9 @@ func TestUserControllerImpl_Login(t *testing.T) {
 		t.Log(webResponse)
 	})
 
-	t.Run("Login User Not Registered", func(t *testing.T) {
-		_ = userRepository.DeleteAll(context.Background())
-		requestJSON = generateUserJSON(modeGoodFormat)
+	t.Run("login using not registered user should get not found, empty data, and no cookie", func(t *testing.T) {
+		userRepository.DeleteAll(context.Background())
+		requestJSON := generateUserJSON(userTestValid)
 
 		req := httptest.NewRequest(http.MethodPost, pathLogin, requestJSON)
 		w := httptest.NewRecorder()
@@ -262,21 +256,22 @@ func TestUserControllerImpl_Login(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, resBody)
 
-		err = json.Unmarshal(resBody, webResponse)
+		var webResponse model.WebResponse
+		err = json.Unmarshal(resBody, &webResponse)
 		assert.NoError(t, err)
 
 		assert.Empty(t, webResponse.Data)
 		assert.NotEmpty(t, webResponse.Error)
-		assert.Equal(t, "Record not found", webResponse.Error)
 
 		t.Log(res.Cookies())
 		t.Log(webResponse)
 	})
 
-	t.Run("Login Wrong Password", func(t *testing.T) {
-		_ = userRepository.DeleteAll(context.Background())
+	t.Run("login using wrong password should get bad request, no data, and no cookie", func(t *testing.T) {
+		userRepository.DeleteAll(context.Background())
 		registerDummyUser()
-		requestJSON = generateUserJSON(modeBadFormat)
+
+		requestJSON := generateUserJSON(userTestWrongPassword)
 
 		req := httptest.NewRequest(http.MethodPost, pathLogin, requestJSON)
 		w := httptest.NewRecorder()
@@ -290,7 +285,8 @@ func TestUserControllerImpl_Login(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, resBody)
 
-		err = json.Unmarshal(resBody, webResponse)
+		var webResponse model.WebResponse
+		err = json.Unmarshal(resBody, &webResponse)
 		assert.NoError(t, err)
 		assert.Empty(t, webResponse.Data)
 		assert.NotEmpty(t, webResponse.Error)
@@ -299,9 +295,9 @@ func TestUserControllerImpl_Login(t *testing.T) {
 		t.Log(webResponse)
 	})
 
-	t.Run("Login Bad Format Input", func(t *testing.T) {
-		_ = userRepository.DeleteAll(context.Background())
-		requestJSON = generateUserJSON(modeBadFormat)
+	t.Run("login using bad input should get bad request, no data and no cookie", func(t *testing.T) {
+		userRepository.DeleteAll(context.Background())
+		requestJSON := generateUserJSON(userTestInvalid)
 
 		req := httptest.NewRequest(http.MethodPost, pathLogin, requestJSON)
 		w := httptest.NewRecorder()
@@ -315,7 +311,8 @@ func TestUserControllerImpl_Login(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, resBody)
 
-		err = json.Unmarshal(resBody, webResponse)
+		var webResponse model.WebResponse
+		err = json.Unmarshal(resBody, &webResponse)
 		assert.NoError(t, err)
 		assert.Empty(t, webResponse.Data)
 		assert.NotEmpty(t, webResponse.Error)
@@ -329,8 +326,8 @@ func TestUserControllerImpl_Find(t *testing.T) {
 	webResponse := &model.WebResponse{}
 	path := strings.Replace(pathFind, ":key", "", 1)
 
-	t.Run("Find Success", func(t *testing.T) {
-		_ = userRepository.DeleteAll(context.Background())
+	t.Run("find user should get ok, data array of users", func(t *testing.T) {
+		userRepository.DeleteAll(context.Background())
 		dummyResponse := registerDummyUser()
 		token, err := helper.GenerateJWT(dummyResponse)
 		assert.NoError(t, err)
@@ -356,7 +353,7 @@ func TestUserControllerImpl_Find(t *testing.T) {
 		t.Log(webResponse)
 	})
 
-	t.Run("Find With No Signature (JWT)", func(t *testing.T) {
+	t.Run("find user with no signature cookie (jwt) should get unauthorized and empty data", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, path+"notregistered", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -377,8 +374,8 @@ func TestUserControllerImpl_Find(t *testing.T) {
 		t.Log(webResponse)
 	})
 
-	t.Run("Find Not Found", func(t *testing.T) {
-		_ = userRepository.DeleteAll(context.Background())
+	t.Run("find non-exist user should get ok and empty array data", func(t *testing.T) {
+		userRepository.DeleteAll(context.Background())
 		dummyResponse := registerDummyUser()
 		token, err := helper.GenerateJWT(dummyResponse)
 		assert.NoError(t, err)
@@ -406,16 +403,13 @@ func TestUserControllerImpl_Find(t *testing.T) {
 }
 
 func TestUserControllerImpl_UpdateProfile(t *testing.T) {
-	requestJSON := generateUserJSON(modeGoodFormat)
-	webResponse := &model.WebResponse{}
-
-	t.Run("Update Profile Success", func(t *testing.T) {
-		_ = userRepository.DeleteAll(context.Background())
+	t.Run("update profile with valid input should get ok and data of updated user", func(t *testing.T) {
+		userRepository.DeleteAll(context.Background())
 		dummyResponse := registerDummyUser()
 		token, err := helper.GenerateJWT(dummyResponse)
 		assert.NoError(t, err)
 
-		requestJSON = generateUserJSON(modeUpdate)
+		requestJSON := generateUserJSON(userTestUpdate)
 
 		req := httptest.NewRequest(http.MethodPut, pathUpdateProfile, requestJSON)
 		req.AddCookie(generateJWTCookie(token))
@@ -429,7 +423,8 @@ func TestUserControllerImpl_UpdateProfile(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, resBody)
 
-		err = json.Unmarshal(resBody, webResponse)
+		var webResponse model.WebResponse
+		err = json.Unmarshal(resBody, &webResponse)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, webResponse.Data)
 		assert.Empty(t, webResponse.Error)
@@ -442,8 +437,8 @@ func TestUserControllerImpl_UpdateProfile(t *testing.T) {
 		t.Log(webResponse)
 	})
 
-	t.Run("Update Profile No Signature Key (JWT)", func(t *testing.T) {
-		_ = userRepository.DeleteAll(context.Background())
+	t.Run("update user with no signature (jwt) should get unauthorized and empty data", func(t *testing.T) {
+		userRepository.DeleteAll(context.Background())
 		req := httptest.NewRequest(http.MethodPut, pathUpdateProfile, nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -455,7 +450,8 @@ func TestUserControllerImpl_UpdateProfile(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, resBody)
 
-		err = json.Unmarshal(resBody, webResponse)
+		var webResponse model.WebResponse
+		err = json.Unmarshal(resBody, &webResponse)
 		assert.NoError(t, err)
 		assert.Empty(t, webResponse.Data)
 		assert.NotEmpty(t, webResponse.Error)
@@ -464,13 +460,13 @@ func TestUserControllerImpl_UpdateProfile(t *testing.T) {
 		t.Log(webResponse)
 	})
 
-	t.Run("Update Profile Bad Format", func(t *testing.T) {
-		_ = userRepository.DeleteAll(context.Background())
+	t.Run("update profile with bad format should get bad request and empty data", func(t *testing.T) {
+		userRepository.DeleteAll(context.Background())
 		dummyResponse := registerDummyUser()
 		token, err := helper.GenerateJWT(dummyResponse)
 		assert.NoError(t, err)
 
-		requestJSON = generateUserJSON(modeBadFormat)
+		requestJSON := generateUserJSON(userTestInvalid)
 
 		req := httptest.NewRequest(http.MethodPut, pathUpdateProfile, requestJSON)
 		req.AddCookie(generateJWTCookie(token))
@@ -484,7 +480,8 @@ func TestUserControllerImpl_UpdateProfile(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, resBody)
 
-		err = json.Unmarshal(resBody, webResponse)
+		var webResponse model.WebResponse
+		err = json.Unmarshal(resBody, &webResponse)
 		assert.NoError(t, err)
 		assert.Empty(t, webResponse.Data)
 		assert.NotEmpty(t, webResponse.Error)
@@ -496,11 +493,10 @@ func TestUserControllerImpl_UpdateProfile(t *testing.T) {
 }
 
 func TestUserControllerImpl_UpdatePassword(t *testing.T) {
-	requestJSON := generateUserJSON(modeUpdate)
-	webResponse := &model.WebResponse{}
+	t.Run("update password success should get ok and no error", func(t *testing.T) {
+		userRepository.DeleteAll(context.Background())
 
-	t.Run("Update Password Success", func(t *testing.T) {
-		_ = userRepository.DeleteAll(context.Background())
+		requestJSON := generateUserJSON(userTestUpdate)
 		dummyResponse := registerDummyUser()
 		token, err := helper.GenerateJWT(dummyResponse)
 		assert.NoError(t, err)
@@ -517,16 +513,17 @@ func TestUserControllerImpl_UpdatePassword(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, resBody)
 
-		err = json.Unmarshal(resBody, webResponse)
+		var webResponse model.WebResponse
+		err = json.Unmarshal(resBody, &webResponse)
 		assert.NoError(t, err)
-		assert.NotEmpty(t, webResponse.Data)
+		assert.Empty(t, webResponse.Data)
 		assert.Empty(t, webResponse.Error)
 
 		t.Log(res.Cookies())
 		t.Log(webResponse)
 	})
 
-	t.Run("Update Password No Signature (JWT)", func(t *testing.T) {
+	t.Run("update password with no signature (jwt) should get unauthorized and error", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPut, pathUpdatePassword, nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -538,7 +535,8 @@ func TestUserControllerImpl_UpdatePassword(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, resBody)
 
-		err = json.Unmarshal(resBody, webResponse)
+		var webResponse model.WebResponse
+		err = json.Unmarshal(resBody, &webResponse)
 		assert.NoError(t, err)
 		assert.Nil(t, webResponse.Data)
 		assert.NotEmpty(t, webResponse.Error)
@@ -547,13 +545,13 @@ func TestUserControllerImpl_UpdatePassword(t *testing.T) {
 		t.Log(webResponse)
 	})
 
-	t.Run("Update Password Bad Format Input", func(t *testing.T) {
-		_ = userRepository.DeleteAll(context.Background())
+	t.Run("update password with bad format input should get bad request and error", func(t *testing.T) {
+		userRepository.DeleteAll(context.Background())
 		dummyResponse := registerDummyUser()
 		token, err := helper.GenerateJWT(dummyResponse)
 		assert.NoError(t, err)
 
-		requestJSON = generateUserJSON(modeBadFormat)
+		requestJSON := generateUserJSON(userTestInvalid)
 
 		req := httptest.NewRequest(http.MethodPut, pathUpdatePassword, requestJSON)
 		req.AddCookie(generateJWTCookie(token))
@@ -567,7 +565,8 @@ func TestUserControllerImpl_UpdatePassword(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, resBody)
 
-		err = json.Unmarshal(resBody, webResponse)
+		var webResponse model.WebResponse
+		err = json.Unmarshal(resBody, &webResponse)
 		assert.NoError(t, err)
 		assert.Nil(t, webResponse.Data)
 		assert.NotEmpty(t, webResponse.Error)
@@ -576,9 +575,10 @@ func TestUserControllerImpl_UpdatePassword(t *testing.T) {
 		t.Log(webResponse)
 	})
 
-	t.Run("Update Password Wrong Old Password", func(t *testing.T) {
-		_ = userRepository.DeleteAll(context.Background())
-		requestJSON = generateUserJSON(modeWrongOldPassword)
+	t.Run("update password using wrong old password should get bad request and error", func(t *testing.T) {
+		userRepository.DeleteAll(context.Background())
+
+		requestJSON := generateUserJSON(userTestWrongPassword)
 		dummyResponse := registerDummyUser()
 		token, err := helper.GenerateJWT(dummyResponse)
 		assert.NoError(t, err)
@@ -595,7 +595,8 @@ func TestUserControllerImpl_UpdatePassword(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, resBody)
 
-		err = json.Unmarshal(resBody, webResponse)
+		var webResponse model.WebResponse
+		err = json.Unmarshal(resBody, &webResponse)
 		assert.NoError(t, err)
 		assert.Nil(t, webResponse.Data)
 		assert.NotEmpty(t, webResponse.Error)
@@ -606,12 +607,9 @@ func TestUserControllerImpl_UpdatePassword(t *testing.T) {
 }
 
 func TestUserControllerImpl_Delete(t *testing.T) {
-	requestJSON := generateUserJSON(modeUpdate)
-	webResponse := &model.WebResponse{}
-
-	t.Run("Delete Success", func(t *testing.T) {
-		_ = userRepository.DeleteAll(context.Background())
-		requestJSON = generateUserJSON(modeGoodFormat)
+	t.Run("delete using valid input should get ok and no error", func(t *testing.T) {
+		userRepository.DeleteAll(context.Background())
+		requestJSON := generateUserJSON(userTestValid)
 		dummyResponse := registerDummyUser()
 		token, err := helper.GenerateJWT(dummyResponse)
 		assert.NoError(t, err)
@@ -628,19 +626,18 @@ func TestUserControllerImpl_Delete(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, resBody)
 
-		err = json.Unmarshal(resBody, webResponse)
+		var webResponse model.WebResponse
+		err = json.Unmarshal(resBody, &webResponse)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, webResponse.Data)
 		assert.Empty(t, webResponse.Error)
-
-		assert.Equal(t, "User Deleted Successfully", webResponse.Data)
 
 		t.Log(res.Cookies())
 		t.Log(webResponse)
 	})
 
-	t.Run("Delete No Signature (JWT)", func(t *testing.T) {
-		_ = userRepository.DeleteAll(context.Background())
+	t.Run("delete using no signature (jwt) should get unauthorized and error", func(t *testing.T) {
+		userRepository.DeleteAll(context.Background())
 		req := httptest.NewRequest(http.MethodDelete, pathDelete, nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -652,7 +649,8 @@ func TestUserControllerImpl_Delete(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, resBody)
 
-		err = json.Unmarshal(resBody, webResponse)
+		var webResponse model.WebResponse
+		err = json.Unmarshal(resBody, &webResponse)
 		assert.NoError(t, err)
 		assert.Nil(t, webResponse.Data)
 		assert.NotEmpty(t, webResponse.Error)
@@ -661,9 +659,9 @@ func TestUserControllerImpl_Delete(t *testing.T) {
 		t.Log(webResponse)
 	})
 
-	t.Run("Delete Bad Format Input", func(t *testing.T) {
-		_ = userRepository.DeleteAll(context.Background())
-		requestJSON = generateUserJSON(modeBadFormat)
+	t.Run("delete using invalid input should get bad request and error", func(t *testing.T) {
+		userRepository.DeleteAll(context.Background())
+		requestJSON := generateUserJSON(userTestInvalid)
 		dummyResponse := registerDummyUser()
 		token, err := helper.GenerateJWT(dummyResponse)
 		assert.NoError(t, err)
@@ -680,7 +678,8 @@ func TestUserControllerImpl_Delete(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, resBody)
 
-		err = json.Unmarshal(resBody, webResponse)
+		var webResponse model.WebResponse
+		err = json.Unmarshal(resBody, &webResponse)
 		assert.NoError(t, err)
 		assert.Nil(t, webResponse.Data)
 		assert.NotEmpty(t, webResponse.Error)
@@ -689,9 +688,10 @@ func TestUserControllerImpl_Delete(t *testing.T) {
 		t.Log(webResponse)
 	})
 
-	t.Run("Delete Wrong Password", func(t *testing.T) {
-		_ = userRepository.DeleteAll(context.Background())
-		requestJSON = generateUserJSON(modeWrongOldPassword)
+	t.Run("delete using wrong old password should get bad request and error", func(t *testing.T) {
+		userRepository.DeleteAll(context.Background())
+
+		requestJSON := generateUserJSON(userTestUpdate)
 		dummyResponse := registerDummyUser()
 		token, err := helper.GenerateJWT(dummyResponse)
 		assert.NoError(t, err)
@@ -708,12 +708,11 @@ func TestUserControllerImpl_Delete(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, resBody)
 
-		err = json.Unmarshal(resBody, webResponse)
+		var webResponse model.WebResponse
+		err = json.Unmarshal(resBody, &webResponse)
 		assert.NoError(t, err)
 		assert.Nil(t, webResponse.Data)
 		assert.NotEmpty(t, webResponse.Error)
-
-		assert.Equal(t, "Incorrect password", webResponse.Error)
 
 		t.Log(res.Cookies())
 		t.Log(webResponse)

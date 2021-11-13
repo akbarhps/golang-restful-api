@@ -17,14 +17,14 @@ func JWTValidator() gin.HandlerFunc {
 
 		key, err := c.Cookie(helper.JWTCookieName)
 		if err != nil {
-			exception.ErrorHandler(c, exception.InvalidSignatureError{Message: "No Signature Provided"})
+			exception.PanicHandler(c, exception.InvalidSignatureError{Message: "No Signature Provided"})
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
 		payload, err := helper.ValidateJWT(key)
 		if err != nil {
-			exception.ErrorHandler(c, exception.InvalidSignatureError{Message: err.Error()})
+			exception.PanicHandler(c, exception.InvalidSignatureError{Message: err.Error()})
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}

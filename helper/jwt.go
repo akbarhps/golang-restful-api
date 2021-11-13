@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-var jwtSecretKey = []byte("random-key-ekan-biar-kek-gojek")
+var jwtSecretKey = []byte("jwt-secret-key")
 var JWTCookieName = "Signature-Key"
 
 func GenerateJWT(user *model.UserResponse) (string, error) {

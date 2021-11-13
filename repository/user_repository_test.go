@@ -15,11 +15,7 @@ import (
 func setup() UserRepository {
 	db := app.NewDatabase("test")
 	repository := NewUserRepository(db)
-
-	err := repository.DeleteAll(context.Background())
-	if err != nil {
-		panic(err)
-	}
+	repository.DeleteAll(context.Background())
 
 	return repository
 }
@@ -40,62 +36,83 @@ func createUser() *domain.User {
 	}
 }
 
-func TestRepositoryImpl_CreateSuccess(t *testing.T) {
-	repository := setup()
-	user := createUser()
+func TestUserRepositoryImpl_Create(t *testing.T) {
+	t.Run("create user with valid input should not panic", func(t *testing.T) {
+		repository := setup()
+		user := createUser()
 
-	err := repository.Create(context.Background(), user)
-	assert.NoError(t, err)
+		assert.NotPanics(t, func() {
+			repository.Create(context.Background(), user)
+		})
+	})
+
+	t.Run("create user with registered email or username should panic", func(t *testing.T) {
+		repository := setup()
+		user := createUser()
+
+		assert.NotPanics(t, func() {
+			repository.Create(context.Background(), user)
+		})
+		assert.Panics(t, func() {
+			repository.Create(context.Background(), user)
+		})
+	})
 }
 
-func TestRepositoryImpl_CreateDuplicate(t *testing.T) {
-	repository := setup()
-	user := createUser()
+func TestUserRepositoryImpl_Find(t *testing.T) {
+	t.Run("find success should return users", func(t *testing.T) {
+		repository := setup()
+		user := createUser()
 
-	err := repository.Create(context.Background(), user)
-	assert.NoError(t, err)
+		assert.NotPanics(t, func() {
+			repository.Create(context.Background(), user)
+			users := repository.Find(context.Background(), user)
+			assert.NotEmpty(t, users)
+		})
+	})
 
-	err = repository.Create(context.Background(), user)
-	assert.Error(t, err)
+	t.Run("find user not found should return empty slice", func(t *testing.T) {
+		repository := setup()
+
+		assert.NotPanics(t, func() {
+			users := repository.Find(context.Background(), &domain.User{})
+			assert.Empty(t, users)
+		})
+	})
 }
 
-func TestRepositoryImpl_FindByUsername(t *testing.T) {
-	repository := setup()
-	user := createUser()
+func TestUserRepositoryImpl_Update(t *testing.T) {
+	t.Run("update success should not panic", func(t *testing.T) {
+		repository := setup()
+		user := createUser()
 
-	err := repository.Create(context.Background(), user)
-	assert.NoError(t, err)
+		assert.NotPanics(t, func() {
+			repository.Create(context.Background(), user)
+			user.FullName = "test repo update"
+			repository.Update(context.Background(), user)
+		})
+	})
 
-	findUser, err := repository.Find(context.Background(), user)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, findUser)
-	assert.Equal(t, user.Id, findUser[0].Id)
+	t.Run("update non-exist user should not panic", func(t *testing.T) {
+		repository := setup()
+		user := createUser()
+
+		assert.NotPanics(t, func() {
+			repository.Update(context.Background(), user)
+		})
+	})
 }
 
-func TestRepositoryImpl_Update(t *testing.T) {
-	repository := setup()
-	user := createUser()
+func TestUserRepositoryImpl_Delete(t *testing.T) {
+	t.Run("delete user should return empty slice when try to find it", func(t *testing.T) {
+		repository := setup()
+		user := createUser()
 
-	err := repository.Create(context.Background(), user)
-	assert.NoError(t, err)
-
-	user.Username = "testupdate"
-
-	err = repository.Update(context.Background(), user)
-	assert.NoError(t, err)
-}
-
-func TestRepositoryImpl_Delete(t *testing.T) {
-	repository := setup()
-	user := createUser()
-
-	err := repository.Create(context.Background(), user)
-	assert.NoError(t, err)
-
-	err = repository.Delete(context.Background(), user)
-	assert.NoError(t, err)
-
-	findUser, err := repository.Find(context.Background(), user)
-	assert.Empty(t, findUser)
-	assert.NoError(t, err)
+		assert.NotPanics(t, func() {
+			repository.Create(context.Background(), user)
+			repository.Delete(context.Background(), user)
+			users := repository.Find(context.Background(), user)
+			assert.Empty(t, users)
+		})
+	})
 }
