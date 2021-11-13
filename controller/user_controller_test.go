@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"github.com/golang-jwt/jwt"
 	"go-api/app"
-	"go-api/exception"
 	"go-api/helper"
 	"go-api/middleware"
 	"go-api/model"
@@ -116,7 +115,7 @@ func generateUserJSON(userTest *userTest) *bytes.Reader {
 func TestMain(m *testing.M) {
 	router = gin.Default()
 	router.Use(middleware.JWTValidator())
-	router.Use(gin.CustomRecovery(exception.PanicHandler))
+	router.Use(gin.CustomRecovery(middleware.PanicHandler))
 
 	db := app.NewDatabase("test")
 	userRepository = repository.NewUserRepository(db)

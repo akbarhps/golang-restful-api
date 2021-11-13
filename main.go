@@ -3,7 +3,6 @@ package main
 import (
 	"go-api/app"
 	"go-api/controller"
-	"go-api/exception"
 	"go-api/middleware"
 	"go-api/repository"
 	"go-api/service"
@@ -20,7 +19,7 @@ func main() {
 
 	r := gin.Default()
 	r.Use(middleware.JWTValidator())
-	r.Use(gin.CustomRecovery(exception.PanicHandler))
+	r.Use(gin.CustomRecovery(middleware.PanicHandler))
 
 	//TODO: Refactor routes
 	r.GET("/api/user/:key", userController.Find)

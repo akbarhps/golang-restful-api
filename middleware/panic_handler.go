@@ -1,7 +1,8 @@
-package exception
+package middleware
 
 import (
 	"github.com/gin-gonic/gin"
+	"go-api/exception"
 	"go-api/model"
 	"net/http"
 
@@ -36,16 +37,16 @@ func PanicHandler(c *gin.Context, err interface{}) {
 	res := &model.WebResponse{}
 
 	switch err.(type) {
-	case RecordDuplicateError:
-		badRequest(res, err.(RecordDuplicateError).Error())
-	case RecordNotFoundError:
-		notFound(res, err.(RecordNotFoundError).Error())
+	case exception.RecordDuplicateError:
+		badRequest(res, err.(exception.RecordDuplicateError).Error())
+	case exception.RecordNotFoundError:
+		notFound(res, err.(exception.RecordNotFoundError).Error())
 	case validator.ValidationErrors:
 		badRequest(res, err.(validator.ValidationErrors).Error())
-	case InvalidCredentialError:
-		badRequest(res, err.(InvalidCredentialError).Error())
-	case InvalidSignatureError:
-		unauthorizedError(res, err.(InvalidSignatureError).Error())
+	case exception.InvalidCredentialError:
+		badRequest(res, err.(exception.InvalidCredentialError).Error())
+	case exception.InvalidSignatureError:
+		unauthorizedError(res, err.(exception.InvalidSignatureError).Error())
 	case error:
 		internalServerError(res, err.(error).Error())
 	}
