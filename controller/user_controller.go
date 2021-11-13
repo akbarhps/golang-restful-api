@@ -6,10 +6,11 @@ import (
 
 type UserController interface {
 	SetRoutes(r *gin.Engine)
-	Register(c *gin.Context)
-	Login(c *gin.Context)
-	Find(c *gin.Context)
-	UpdateProfile(c *gin.Context)
-	UpdatePassword(c *gin.Context)
-	Delete(c *gin.Context)
+
+	Register(ctx *gin.Context)
+	Login(ctx *gin.Context)
+	Find(ctx *gin.Context)
+	UpdateProfile(ctx *gin.Context)
+	UpdatePassword(ctx *gin.Context)
+	Delete(ctx *gin.Context)
 }
