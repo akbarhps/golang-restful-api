@@ -97,6 +97,7 @@ func registerDummyUser() *model.UserResponse {
 	})
 	return response
 }
+
 func generateJWTCookie(token string) *http.Cookie {
 	return &http.Cookie{
 		Name:    helper.JWTCookieName,
@@ -133,12 +134,9 @@ func TestMain(m *testing.M) {
 }
 
 func TestUserControllerImpl_Register(t *testing.T) {
-	requestJSON := generateUserJSON(userTestValid)
-	webResponse := &model.WebResponse{}
-
 	t.Run("register success should return user data and cookie", func(t *testing.T) {
 		userRepository.DeleteAll(context.Background())
-		requestJSON = generateUserJSON(userTestValid)
+		requestJSON := generateUserJSON(userTestValid)
 
 		req := httptest.NewRequest(http.MethodPost, pathRegister, requestJSON)
 		w := httptest.NewRecorder()
@@ -152,7 +150,8 @@ func TestUserControllerImpl_Register(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, resBody)
 
-		err = json.Unmarshal(resBody, webResponse)
+		var webResponse model.WebResponse
+		err = json.Unmarshal(resBody, &webResponse)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, webResponse.Data)
 		assert.Empty(t, webResponse.Error)
@@ -163,7 +162,7 @@ func TestUserControllerImpl_Register(t *testing.T) {
 
 	t.Run("register using bad input should get bad request, empty data, and no cookie", func(t *testing.T) {
 		userRepository.DeleteAll(context.Background())
-		requestJSON = generateUserJSON(userTestInvalid)
+		requestJSON := generateUserJSON(userTestInvalid)
 
 		req := httptest.NewRequest(http.MethodPost, pathRegister, requestJSON)
 		w := httptest.NewRecorder()
@@ -177,7 +176,8 @@ func TestUserControllerImpl_Register(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, resBody)
 
-		err = json.Unmarshal(resBody, webResponse)
+		var webResponse model.WebResponse
+		err = json.Unmarshal(resBody, &webResponse)
 		assert.NoError(t, err)
 		assert.Empty(t, webResponse.Data)
 		assert.NotEmpty(t, webResponse.Error)
@@ -189,7 +189,7 @@ func TestUserControllerImpl_Register(t *testing.T) {
 	t.Run("register using registered email or username should get bad request, empty data, and no cookie", func(t *testing.T) {
 		userRepository.DeleteAll(context.Background())
 		registerDummyUser()
-		requestJSON = generateUserJSON(userTestValid)
+		requestJSON := generateUserJSON(userTestValid)
 
 		req := httptest.NewRequest(http.MethodPost, pathRegister, requestJSON)
 		w := httptest.NewRecorder()
@@ -203,7 +203,8 @@ func TestUserControllerImpl_Register(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, resBody)
 
-		err = json.Unmarshal(resBody, webResponse)
+		var webResponse model.WebResponse
+		err = json.Unmarshal(resBody, &webResponse)
 		assert.NoError(t, err)
 		assert.Empty(t, webResponse.Data)
 		assert.NotEmpty(t, webResponse.Error)
