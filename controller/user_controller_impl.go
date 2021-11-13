@@ -15,8 +15,26 @@ type userControllerImpl struct {
 	Service service.UserService
 }
 
+var (
+	UserPathRegister       = "/api/user/register"
+	UserPathLogin          = "/api/user/login"
+	UserPathFind           = "/api/user/:key"
+	UserPathUpdateProfile  = "/api/user"
+	UserPathUpdatePassword = "/api/user/password"
+	UserPathDelete         = "/api/user"
+)
+
 func NewUserController(service service.UserService) UserController {
 	return &userControllerImpl{Service: service}
+}
+
+func (controller *userControllerImpl) SetRoutes(r *gin.Engine) {
+	r.GET(UserPathFind, controller.Find)
+	r.PUT(UserPathUpdateProfile, controller.UpdateProfile)
+	r.PUT(UserPathUpdatePassword, controller.UpdatePassword)
+	r.POST(UserPathLogin, controller.Login)
+	r.POST(UserPathRegister, controller.Register)
+	r.DELETE(UserPathDelete, controller.Delete)
 }
 
 func (controller *userControllerImpl) Register(c *gin.Context) {
@@ -97,7 +115,6 @@ func (controller *userControllerImpl) UpdatePassword(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, &model.WebResponse{
 		Code:   http.StatusOK,
 		Status: "OK",
-		//Data:   response,
 	})
 }
 
@@ -112,6 +129,5 @@ func (controller *userControllerImpl) Delete(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, &model.WebResponse{
 		Code:   http.StatusOK,
 		Status: "OK",
-		Data:   "User Deleted Successfully",
 	})
 }

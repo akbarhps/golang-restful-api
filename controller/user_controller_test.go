@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var router *gin.Engine
+var r *gin.Engine
 var userController UserController
 var userService service.UserService
 var userRepository repository.UserRepository
@@ -41,13 +41,6 @@ type userTest struct {
 }
 
 var (
-	pathRegister       = "/api/register"
-	pathLogin          = "/api/login"
-	pathFind           = "/api/user/:key"
-	pathUpdateProfile  = "/api/user/profile"
-	pathUpdatePassword = "/api/user/password"
-	pathDelete         = "/api/user"
-
 	userTestValid = &userTest{
 		FullName:    "test controller",
 		Username:    "testctrl",
@@ -113,21 +106,15 @@ func generateUserJSON(userTest *userTest) *bytes.Reader {
 }
 
 func TestMain(m *testing.M) {
-	router = gin.Default()
-	router.Use(middleware.JWTValidator())
-	router.Use(gin.CustomRecovery(middleware.PanicHandler))
+	r = gin.Default()
+	r.Use(middleware.JWTValidator())
+	r.Use(gin.CustomRecovery(middleware.PanicHandler))
 
 	db := app.NewDatabase("test")
 	userRepository = repository.NewUserRepository(db)
 	userService = service.NewUserService(validator.New(), userRepository)
 	userController = NewUserController(userService)
-
-	router.GET(pathFind, userController.Find)
-	router.POST(pathRegister, userController.Register)
-	router.POST(pathLogin, userController.Login)
-	router.PUT(pathUpdateProfile, userController.UpdateProfile)
-	router.PUT(pathUpdatePassword, userController.UpdatePassword)
-	router.DELETE(pathDelete, userController.Delete)
+	userController.SetRoutes(r)
 
 	m.Run()
 }
@@ -137,9 +124,9 @@ func TestUserControllerImpl_Register(t *testing.T) {
 		userRepository.DeleteAll(context.Background())
 		requestJSON := generateUserJSON(userTestValid)
 
-		req := httptest.NewRequest(http.MethodPost, pathRegister, requestJSON)
+		req := httptest.NewRequest(http.MethodPost, UserPathRegister, requestJSON)
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusCreated, res.StatusCode)
@@ -163,9 +150,9 @@ func TestUserControllerImpl_Register(t *testing.T) {
 		userRepository.DeleteAll(context.Background())
 		requestJSON := generateUserJSON(userTestInvalid)
 
-		req := httptest.NewRequest(http.MethodPost, pathRegister, requestJSON)
+		req := httptest.NewRequest(http.MethodPost, UserPathRegister, requestJSON)
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
@@ -190,9 +177,9 @@ func TestUserControllerImpl_Register(t *testing.T) {
 		registerDummyUser()
 		requestJSON := generateUserJSON(userTestValid)
 
-		req := httptest.NewRequest(http.MethodPost, pathRegister, requestJSON)
+		req := httptest.NewRequest(http.MethodPost, UserPathRegister, requestJSON)
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
@@ -219,9 +206,9 @@ func TestUserControllerImpl_Login(t *testing.T) {
 		registerDummyUser()
 		requestJSON := generateUserJSON(userTestValid)
 
-		req := httptest.NewRequest(http.MethodPost, pathLogin, requestJSON)
+		req := httptest.NewRequest(http.MethodPost, UserPathLogin, requestJSON)
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusOK, res.StatusCode)
@@ -245,9 +232,9 @@ func TestUserControllerImpl_Login(t *testing.T) {
 		userRepository.DeleteAll(context.Background())
 		requestJSON := generateUserJSON(userTestValid)
 
-		req := httptest.NewRequest(http.MethodPost, pathLogin, requestJSON)
+		req := httptest.NewRequest(http.MethodPost, UserPathLogin, requestJSON)
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusNotFound, res.StatusCode)
@@ -273,9 +260,9 @@ func TestUserControllerImpl_Login(t *testing.T) {
 
 		requestJSON := generateUserJSON(userTestWrongPassword)
 
-		req := httptest.NewRequest(http.MethodPost, pathLogin, requestJSON)
+		req := httptest.NewRequest(http.MethodPost, UserPathLogin, requestJSON)
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
@@ -299,9 +286,9 @@ func TestUserControllerImpl_Login(t *testing.T) {
 		userRepository.DeleteAll(context.Background())
 		requestJSON := generateUserJSON(userTestInvalid)
 
-		req := httptest.NewRequest(http.MethodPost, pathLogin, requestJSON)
+		req := httptest.NewRequest(http.MethodPost, UserPathLogin, requestJSON)
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
@@ -324,7 +311,7 @@ func TestUserControllerImpl_Login(t *testing.T) {
 
 func TestUserControllerImpl_Find(t *testing.T) {
 	webResponse := &model.WebResponse{}
-	path := strings.Replace(pathFind, ":key", "", 1)
+	path := strings.Replace(UserPathFind, ":key", "", 1)
 
 	t.Run("find user should get ok, data array of users", func(t *testing.T) {
 		userRepository.DeleteAll(context.Background())
@@ -335,7 +322,7 @@ func TestUserControllerImpl_Find(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, path+dummyResponse.Email, nil)
 		req.AddCookie(generateJWTCookie(token))
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusOK, res.StatusCode)
@@ -356,7 +343,7 @@ func TestUserControllerImpl_Find(t *testing.T) {
 	t.Run("find user with no signature cookie (jwt) should get unauthorized and empty data", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, path+"notregistered", nil)
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
@@ -383,7 +370,7 @@ func TestUserControllerImpl_Find(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, path+"notregistered", nil)
 		req.AddCookie(generateJWTCookie(token))
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusOK, res.StatusCode)
@@ -411,10 +398,10 @@ func TestUserControllerImpl_UpdateProfile(t *testing.T) {
 
 		requestJSON := generateUserJSON(userTestUpdate)
 
-		req := httptest.NewRequest(http.MethodPut, pathUpdateProfile, requestJSON)
+		req := httptest.NewRequest(http.MethodPut, UserPathUpdateProfile, requestJSON)
 		req.AddCookie(generateJWTCookie(token))
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusOK, res.StatusCode)
@@ -439,9 +426,9 @@ func TestUserControllerImpl_UpdateProfile(t *testing.T) {
 
 	t.Run("update user with no signature (jwt) should get unauthorized and empty data", func(t *testing.T) {
 		userRepository.DeleteAll(context.Background())
-		req := httptest.NewRequest(http.MethodPut, pathUpdateProfile, nil)
+		req := httptest.NewRequest(http.MethodPut, UserPathUpdateProfile, nil)
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
@@ -468,10 +455,10 @@ func TestUserControllerImpl_UpdateProfile(t *testing.T) {
 
 		requestJSON := generateUserJSON(userTestInvalid)
 
-		req := httptest.NewRequest(http.MethodPut, pathUpdateProfile, requestJSON)
+		req := httptest.NewRequest(http.MethodPut, UserPathUpdateProfile, requestJSON)
 		req.AddCookie(generateJWTCookie(token))
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
@@ -501,10 +488,10 @@ func TestUserControllerImpl_UpdatePassword(t *testing.T) {
 		token, err := helper.GenerateJWT(dummyResponse)
 		assert.NoError(t, err)
 
-		req := httptest.NewRequest(http.MethodPut, pathUpdatePassword, requestJSON)
+		req := httptest.NewRequest(http.MethodPut, UserPathUpdatePassword, requestJSON)
 		req.AddCookie(generateJWTCookie(token))
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusOK, res.StatusCode)
@@ -524,9 +511,9 @@ func TestUserControllerImpl_UpdatePassword(t *testing.T) {
 	})
 
 	t.Run("update password with no signature (jwt) should get unauthorized and error", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPut, pathUpdatePassword, nil)
+		req := httptest.NewRequest(http.MethodPut, UserPathUpdatePassword, nil)
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
@@ -553,10 +540,10 @@ func TestUserControllerImpl_UpdatePassword(t *testing.T) {
 
 		requestJSON := generateUserJSON(userTestInvalid)
 
-		req := httptest.NewRequest(http.MethodPut, pathUpdatePassword, requestJSON)
+		req := httptest.NewRequest(http.MethodPut, UserPathUpdatePassword, requestJSON)
 		req.AddCookie(generateJWTCookie(token))
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
@@ -583,10 +570,10 @@ func TestUserControllerImpl_UpdatePassword(t *testing.T) {
 		token, err := helper.GenerateJWT(dummyResponse)
 		assert.NoError(t, err)
 
-		req := httptest.NewRequest(http.MethodPut, pathUpdatePassword, requestJSON)
+		req := httptest.NewRequest(http.MethodPut, UserPathUpdatePassword, requestJSON)
 		req.AddCookie(generateJWTCookie(token))
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
@@ -614,10 +601,10 @@ func TestUserControllerImpl_Delete(t *testing.T) {
 		token, err := helper.GenerateJWT(dummyResponse)
 		assert.NoError(t, err)
 
-		req := httptest.NewRequest(http.MethodDelete, pathDelete, requestJSON)
+		req := httptest.NewRequest(http.MethodDelete, UserPathDelete, requestJSON)
 		req.AddCookie(generateJWTCookie(token))
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusOK, res.StatusCode)
@@ -629,7 +616,7 @@ func TestUserControllerImpl_Delete(t *testing.T) {
 		var webResponse model.WebResponse
 		err = json.Unmarshal(resBody, &webResponse)
 		assert.NoError(t, err)
-		assert.NotEmpty(t, webResponse.Data)
+		assert.Empty(t, webResponse.Data)
 		assert.Empty(t, webResponse.Error)
 
 		t.Log(res.Cookies())
@@ -638,9 +625,9 @@ func TestUserControllerImpl_Delete(t *testing.T) {
 
 	t.Run("delete using no signature (jwt) should get unauthorized and error", func(t *testing.T) {
 		userRepository.DeleteAll(context.Background())
-		req := httptest.NewRequest(http.MethodDelete, pathDelete, nil)
+		req := httptest.NewRequest(http.MethodDelete, UserPathDelete, nil)
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
@@ -666,10 +653,10 @@ func TestUserControllerImpl_Delete(t *testing.T) {
 		token, err := helper.GenerateJWT(dummyResponse)
 		assert.NoError(t, err)
 
-		req := httptest.NewRequest(http.MethodDelete, pathDelete, requestJSON)
+		req := httptest.NewRequest(http.MethodDelete, UserPathDelete, requestJSON)
 		req.AddCookie(generateJWTCookie(token))
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
@@ -696,10 +683,10 @@ func TestUserControllerImpl_Delete(t *testing.T) {
 		token, err := helper.GenerateJWT(dummyResponse)
 		assert.NoError(t, err)
 
-		req := httptest.NewRequest(http.MethodDelete, pathDelete, requestJSON)
+		req := httptest.NewRequest(http.MethodDelete, UserPathDelete, requestJSON)
 		req.AddCookie(generateJWTCookie(token))
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		r.ServeHTTP(w, req)
 
 		res := w.Result()
 		assert.Equal(t, http.StatusBadRequest, res.StatusCode)

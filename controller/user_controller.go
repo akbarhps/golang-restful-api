@@ -5,6 +5,7 @@ import (
 )
 
 type UserController interface {
+	SetRoutes(r *gin.Engine)
 	Register(c *gin.Context)
 	Login(c *gin.Context)
 	Find(c *gin.Context)
