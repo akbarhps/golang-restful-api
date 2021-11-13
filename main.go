@@ -21,10 +21,10 @@ func main() {
 	r.Use(gin.CustomRecovery(middleware.PanicHandler))
 
 	// repository
-	userRepository := repository.NewUserRepository(db)
+	userRepository := repository.NewUserRepository()
 
 	// service
-	userService := service.NewUserService(validate, userRepository)
+	userService := service.NewUserService(db, validate, userRepository)
 
 	// controller
 	userController := controller.NewUserController(userService)
