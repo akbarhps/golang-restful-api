@@ -81,7 +81,7 @@ var (
 )
 
 func registerDummyUser() *model.UserResponse {
-	response := userService.Register(context.Background(), &model.UserRegisterRequest{
+	response := userService.Register(context.Background(), &model.UserRegister{
 		FullName: "test controller",
 		Username: "testctrl",
 		Email:    "testctrl@test.com",

@@ -38,7 +38,7 @@ func (controller *userControllerImpl) SetRoutes(r *gin.Engine) {
 }
 
 func (controller *userControllerImpl) Register(c *gin.Context) {
-	requestModel := &model.UserRegisterRequest{}
+	requestModel := &model.UserRegister{}
 	err := c.BindJSON(requestModel)
 	helper.PanicIfError(err)
 
@@ -56,7 +56,7 @@ func (controller *userControllerImpl) Register(c *gin.Context) {
 }
 
 func (controller *userControllerImpl) Login(c *gin.Context) {
-	requestModel := &model.UserLoginRequest{}
+	requestModel := &model.UserLogin{}
 	err := c.BindJSON(requestModel)
 	helper.PanicIfError(err)
 
@@ -74,7 +74,7 @@ func (controller *userControllerImpl) Login(c *gin.Context) {
 }
 
 func (controller *userControllerImpl) Find(c *gin.Context) {
-	requestModel := &model.UserFindRequest{
+	requestModel := &model.UserFind{
 		Username: c.Params.ByName("key"),
 		Email:    c.Params.ByName("key"),
 		FullName: c.Params.ByName("key"),
@@ -90,7 +90,7 @@ func (controller *userControllerImpl) Find(c *gin.Context) {
 }
 
 func (controller *userControllerImpl) UpdateProfile(c *gin.Context) {
-	requestModel := &model.UserUpdateProfileRequest{}
+	requestModel := &model.UserUpdateProfile{}
 	err := c.BindJSON(requestModel)
 	helper.PanicIfError(err)
 
@@ -105,7 +105,7 @@ func (controller *userControllerImpl) UpdateProfile(c *gin.Context) {
 }
 
 func (controller *userControllerImpl) UpdatePassword(c *gin.Context) {
-	requestModel := &model.UserUpdatePasswordRequest{}
+	requestModel := &model.UserUpdatePassword{}
 	err := c.BindJSON(requestModel)
 	helper.PanicIfError(err)
 
@@ -119,7 +119,7 @@ func (controller *userControllerImpl) UpdatePassword(c *gin.Context) {
 }
 
 func (controller *userControllerImpl) Delete(c *gin.Context) {
-	requestModel := &model.UserDeleteRequest{}
+	requestModel := &model.UserDelete{}
 	err := c.BindJSON(requestModel)
 	helper.PanicIfError(err)
 

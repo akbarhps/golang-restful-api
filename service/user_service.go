@@ -6,10 +6,10 @@ import (
 )
 
 type UserService interface {
-	Register(ctx context.Context, req *model.UserRegisterRequest) *model.UserResponse
-	Login(ctx context.Context, req *model.UserLoginRequest) *model.UserResponse
-	Find(ctx context.Context, req *model.UserFindRequest) []model.UserResponse
-	UpdateProfile(ctx context.Context, req *model.UserUpdateProfileRequest) *model.UserResponse
-	UpdatePassword(ctx context.Context, req *model.UserUpdatePasswordRequest)
-	Delete(ctx context.Context, req *model.UserDeleteRequest)
+	Register(ctx context.Context, req *model.UserRegister) *model.UserResponse
+	Login(ctx context.Context, req *model.UserLogin) *model.UserResponse
+	Find(ctx context.Context, req *model.UserFind) []model.UserResponse
+	UpdateProfile(ctx context.Context, req *model.UserUpdateProfile) *model.UserResponse
+	UpdatePassword(ctx context.Context, req *model.UserUpdatePassword)
+	Delete(ctx context.Context, req *model.UserDelete)
 }

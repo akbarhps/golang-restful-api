@@ -23,7 +23,7 @@ func NewUserService(validate *validator.Validate, repository repository.UserRepo
 	return &UserServiceImpl{Validate: validate, Repository: repository}
 }
 
-func (service *UserServiceImpl) Register(ctx context.Context, req *model.UserRegisterRequest) *model.UserResponse {
+func (service *UserServiceImpl) Register(ctx context.Context, req *model.UserRegister) *model.UserResponse {
 	err := service.Validate.Struct(req)
 	helper.PanicIfError(err)
 
@@ -54,7 +54,7 @@ func (service *UserServiceImpl) Register(ctx context.Context, req *model.UserReg
 	return user.ToResponse()
 }
 
-func (service *UserServiceImpl) Login(ctx context.Context, req *model.UserLoginRequest) *model.UserResponse {
+func (service *UserServiceImpl) Login(ctx context.Context, req *model.UserLogin) *model.UserResponse {
 	err := service.Validate.Struct(req)
 	helper.PanicIfError(err)
 
@@ -72,7 +72,7 @@ func (service *UserServiceImpl) Login(ctx context.Context, req *model.UserLoginR
 	return users[0].ToResponse()
 }
 
-func (service *UserServiceImpl) Find(ctx context.Context, req *model.UserFindRequest) []model.UserResponse {
+func (service *UserServiceImpl) Find(ctx context.Context, req *model.UserFind) []model.UserResponse {
 	users := service.Repository.Find(ctx, &domain.User{
 		FullName: req.FullName,
 		Username: req.Username,
@@ -87,7 +87,7 @@ func (service *UserServiceImpl) Find(ctx context.Context, req *model.UserFindReq
 	return responseUsers
 }
 
-func (service *UserServiceImpl) UpdateProfile(ctx context.Context, req *model.UserUpdateProfileRequest) *model.UserResponse {
+func (service *UserServiceImpl) UpdateProfile(ctx context.Context, req *model.UserUpdateProfile) *model.UserResponse {
 	err := service.Validate.Struct(req)
 	helper.PanicIfError(err)
 
@@ -109,7 +109,7 @@ func (service *UserServiceImpl) UpdateProfile(ctx context.Context, req *model.Us
 	return user.ToResponse()
 }
 
-func (service *UserServiceImpl) UpdatePassword(ctx context.Context, req *model.UserUpdatePasswordRequest) {
+func (service *UserServiceImpl) UpdatePassword(ctx context.Context, req *model.UserUpdatePassword) {
 	err := service.Validate.Struct(req)
 	helper.PanicIfError(err)
 
@@ -134,7 +134,7 @@ func (service *UserServiceImpl) UpdatePassword(ctx context.Context, req *model.U
 	service.Repository.Update(ctx, user)
 }
 
-func (service *UserServiceImpl) Delete(ctx context.Context, req *model.UserDeleteRequest) {
+func (service *UserServiceImpl) Delete(ctx context.Context, req *model.UserDelete) {
 	err := service.Validate.Struct(req)
 	helper.PanicIfError(err)
 

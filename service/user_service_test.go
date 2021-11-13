@@ -63,7 +63,7 @@ func TestUserServiceImpl_Register(t *testing.T) {
 		userRepository.Mock.On("Create", mock.Anything)
 
 		assert.NotPanics(t, func() {
-			resp := userService.Register(context.Background(), &model.UserRegisterRequest{
+			resp := userService.Register(context.Background(), &model.UserRegister{
 				FullName: rawDomain.FullName,
 				Username: rawDomain.Username,
 				Email:    rawDomain.Email,
@@ -77,7 +77,7 @@ func TestUserServiceImpl_Register(t *testing.T) {
 		userService, _ := setup()
 
 		assert.Panics(t, func() {
-			res := userService.Register(context.Background(), &model.UserRegisterRequest{
+			res := userService.Register(context.Background(), &model.UserRegister{
 				FullName: "",
 				Username: "",
 				Email:    "",
@@ -96,7 +96,7 @@ func TestUserServiceImpl_Register(t *testing.T) {
 		}).Return([]domain.User{rawDomain})
 
 		assert.PanicsWithError(t, "Username or Email already taken", func() {
-			res := userService.Register(context.Background(), &model.UserRegisterRequest{
+			res := userService.Register(context.Background(), &model.UserRegister{
 				FullName: rawDomain.FullName,
 				Username: rawDomain.Username,
 				Email:    rawDomain.Email,
@@ -116,7 +116,7 @@ func TestUserServiceImpl_Login(t *testing.T) {
 		}).Return([]domain.User{responseDomain})
 
 		assert.NotPanics(t, func() {
-			res := userService.Login(context.Background(), &model.UserLoginRequest{
+			res := userService.Login(context.Background(), &model.UserLogin{
 				Username: rawDomain.Username,
 				Password: rawDomain.Password,
 			})
@@ -128,7 +128,7 @@ func TestUserServiceImpl_Login(t *testing.T) {
 		userService, _ := setup()
 
 		assert.Panics(t, func() {
-			res := userService.Login(context.Background(), &model.UserLoginRequest{
+			res := userService.Login(context.Background(), &model.UserLogin{
 				Username: "",
 				Password: "",
 			})
@@ -144,7 +144,7 @@ func TestUserServiceImpl_Login(t *testing.T) {
 		}).Return([]domain.User{})
 
 		assert.PanicsWithError(t, "Record not found", func() {
-			res := userService.Login(context.Background(), &model.UserLoginRequest{
+			res := userService.Login(context.Background(), &model.UserLogin{
 				Username: rawDomain.Username,
 				Password: rawDomain.Password,
 			})
@@ -160,7 +160,7 @@ func TestUserServiceImpl_Login(t *testing.T) {
 		}).Return([]domain.User{rawDomain})
 
 		assert.PanicsWithError(t, "Invalid password", func() {
-			res := userService.Login(context.Background(), &model.UserLoginRequest{
+			res := userService.Login(context.Background(), &model.UserLogin{
 				Username: rawDomain.Username,
 				Password: rawDomain.Password,
 			})
@@ -181,7 +181,7 @@ func TestUserServiceImpl_UpdateProfile(t *testing.T) {
 		userRepository.Mock.On("Update", context.Background(), &responseDomain)
 
 		assert.NotPanics(t, func() {
-			res := userService.UpdateProfile(context.Background(), &model.UserUpdateProfileRequest{
+			res := userService.UpdateProfile(context.Background(), &model.UserUpdateProfile{
 				Id:       rawDomain.Id,
 				Email:    rawDomain.Email,
 				FullName: rawDomain.FullName,
@@ -195,7 +195,7 @@ func TestUserServiceImpl_UpdateProfile(t *testing.T) {
 		userService, _ := setup()
 
 		assert.Panics(t, func() {
-			res := userService.UpdateProfile(context.Background(), &model.UserUpdateProfileRequest{
+			res := userService.UpdateProfile(context.Background(), &model.UserUpdateProfile{
 				Id:       uuid.New(),
 				FullName: "",
 				Username: "",
@@ -215,7 +215,7 @@ func TestUserServiceImpl_UpdateProfile(t *testing.T) {
 		}).Return([]domain.User{})
 
 		assert.PanicsWithError(t, "Record not found", func() {
-			res := userService.UpdateProfile(context.Background(), &model.UserUpdateProfileRequest{
+			res := userService.UpdateProfile(context.Background(), &model.UserUpdateProfile{
 				Id:       rawDomain.Id,
 				FullName: rawDomain.FullName,
 				Username: rawDomain.Username,
@@ -246,7 +246,7 @@ func TestUserServiceImpl_UpdatePassword(t *testing.T) {
 		userRepository.Mock.On("Update", mock.Anything)
 
 		assert.NotPanics(t, func() {
-			userService.UpdatePassword(context.Background(), &model.UserUpdatePasswordRequest{
+			userService.UpdatePassword(context.Background(), &model.UserUpdatePassword{
 				Id:          rawDomain.Id,
 				Email:       rawDomain.Email,
 				Username:    rawDomain.Username,
@@ -260,7 +260,7 @@ func TestUserServiceImpl_UpdatePassword(t *testing.T) {
 		assert.Panics(t, func() {
 			userService, _ := setup()
 
-			userService.UpdatePassword(context.Background(), &model.UserUpdatePasswordRequest{
+			userService.UpdatePassword(context.Background(), &model.UserUpdatePassword{
 				Id:          uuid.New(),
 				OldPassword: "",
 				NewPassword: "",
@@ -278,7 +278,7 @@ func TestUserServiceImpl_UpdatePassword(t *testing.T) {
 		}).Return([]domain.User{})
 
 		assert.PanicsWithError(t, "Record not found", func() {
-			userService.UpdatePassword(context.Background(), &model.UserUpdatePasswordRequest{
+			userService.UpdatePassword(context.Background(), &model.UserUpdatePassword{
 				Id:          rawDomain.Id,
 				Email:       rawDomain.Email,
 				Username:    rawDomain.Username,
@@ -298,7 +298,7 @@ func TestUserServiceImpl_UpdatePassword(t *testing.T) {
 		}).Return([]domain.User{rawDomain})
 
 		assert.PanicsWithError(t, "Invalid old password", func() {
-			userService.UpdatePassword(context.Background(), &model.UserUpdatePasswordRequest{
+			userService.UpdatePassword(context.Background(), &model.UserUpdatePassword{
 				Id:          rawDomain.Id,
 				Username:    rawDomain.Username,
 				Email:       rawDomain.Email,
@@ -321,7 +321,7 @@ func TestUserServiceImpl_Delete(t *testing.T) {
 		userRepository.Mock.On("Delete", context.Background(), &responseDomain)
 
 		assert.NotPanics(t, func() {
-			userService.Delete(context.Background(), &model.UserDeleteRequest{
+			userService.Delete(context.Background(), &model.UserDelete{
 				Id:       rawDomain.Id,
 				Email:    rawDomain.Email,
 				Password: rawDomain.Password,
@@ -334,7 +334,7 @@ func TestUserServiceImpl_Delete(t *testing.T) {
 		assert.Panics(t, func() {
 			userService, _ := setup()
 
-			userService.Delete(context.Background(), &model.UserDeleteRequest{
+			userService.Delete(context.Background(), &model.UserDelete{
 				Id: uuid.New(),
 			})
 		})
@@ -350,7 +350,7 @@ func TestUserServiceImpl_Delete(t *testing.T) {
 		}).Return([]domain.User{})
 
 		assert.PanicsWithError(t, "Record not found", func() {
-			userService.Delete(context.Background(), &model.UserDeleteRequest{
+			userService.Delete(context.Background(), &model.UserDelete{
 				Id:       rawDomain.Id,
 				Username: rawDomain.Username,
 				Email:    rawDomain.Email,
@@ -369,7 +369,7 @@ func TestUserServiceImpl_Delete(t *testing.T) {
 		}).Return([]domain.User{rawDomain})
 
 		assert.PanicsWithError(t, "Invalid password", func() {
-			userService.Delete(context.Background(), &model.UserDeleteRequest{
+			userService.Delete(context.Background(), &model.UserDelete{
 				Id:       rawDomain.Id,
 				Username: rawDomain.Username,
 				Email:    rawDomain.Email,
