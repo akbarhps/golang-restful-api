@@ -30,12 +30,12 @@ func createUser() *domain.User {
 	helper.PanicIfError(err)
 
 	return &domain.User{
-		Id:        uid.String(),
-		FullName:  "test repo",
-		Username:  "testrepo",
-		Email:     "testrepo@test.com",
-		Password:  "testrepo",
-		CreatedAt: time.Now(),
+		Id:          uid.String(),
+		DisplayName: "test repo",
+		Username:    "testrepo",
+		Email:       "testrepo@test.com",
+		Password:    "testrepo",
+		CreatedAt:   time.Now(),
 	}
 }
 
@@ -96,7 +96,7 @@ func TestUserRepositoryImpl_Update(t *testing.T) {
 
 		assert.NotPanics(t, func() {
 			repository.Create(context.Background(), tx, user)
-			user.FullName = "test repo update"
+			user.DisplayName = "test repo update"
 			repository.Update(context.Background(), tx, user)
 		})
 	})

@@ -32,7 +32,7 @@ var userRepository repository.UserRepository
 
 type userTest struct {
 	Id          string    `json:"id"`
-	FullName    string    `json:"full_name"`
+	DisplayName string    `json:"display_name"`
 	Username    string    `json:"username"`
 	Email       string    `json:"email"`
 	Password    string    `json:"password"`
@@ -45,7 +45,7 @@ var (
 	db = app.NewDatabase("test")
 
 	userTestValid = &userTest{
-		FullName:    "test controller",
+		DisplayName: "test controller",
 		Username:    "testctrl",
 		Email:       "testctrl@test.com",
 		Password:    "testctrl",
@@ -54,7 +54,7 @@ var (
 		CreatedAt:   time.Now(),
 	}
 	userTestUpdate = &userTest{
-		FullName:    "test controller update",
+		DisplayName: "test controller update",
 		Username:    "testctrlupd",
 		Email:       "testctrlupd@test.com",
 		Password:    "testctrlupd",
@@ -63,7 +63,7 @@ var (
 		CreatedAt:   time.Now(),
 	}
 	userTestWrongPassword = &userTest{
-		FullName:    "test controller",
+		DisplayName: "test controller",
 		Username:    "testctrl",
 		Email:       "testctrl@test.com",
 		Password:    "wrongpswd",
@@ -73,7 +73,7 @@ var (
 	}
 	userTestInvalid = &userTest{
 		Id:          uuid.UUID{}.String(),
-		FullName:    "",
+		DisplayName: "",
 		Username:    "",
 		Email:       "",
 		Password:    "",
@@ -91,10 +91,10 @@ func clearRecord() *sql.Tx {
 
 func registerDummyUser() *model.UserResponse {
 	response := userService.Register(context.Background(), &model.UserRegister{
-		FullName: "test controller",
-		Username: "testctrl",
-		Email:    "testctrl@test.com",
-		Password: "testctrl",
+		DisplayName: "test controller",
+		Username:    "testctrl",
+		Email:       "testctrl@test.com",
+		Password:    "testctrl",
 	})
 	return response
 }
@@ -434,7 +434,7 @@ func TestUserControllerImpl_UpdateProfile(t *testing.T) {
 		assert.NotEmpty(t, webResponse.Data)
 		assert.Empty(t, webResponse.Error)
 
-		assert.NotEqual(t, dummyResponse.FullName, webResponse.Data.(map[string]interface{})["full_name"])
+		assert.NotEqual(t, dummyResponse.DisplayName, webResponse.Data.(map[string]interface{})["full_name"])
 		assert.NotEqual(t, dummyResponse.Username, webResponse.Data.(map[string]interface{})["username"])
 		assert.NotEqual(t, dummyResponse.Email, webResponse.Data.(map[string]interface{})["email"])
 

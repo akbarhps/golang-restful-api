@@ -48,12 +48,12 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *model.UserRegister)
 	helper.PanicIfError(err)
 
 	user := &domain.User{
-		Id:        uid.String(),
-		FullName:  req.FullName,
-		Username:  req.Username,
-		Email:     req.Email,
-		Password:  string(encrypt),
-		CreatedAt: time.Now(),
+		Id:          uid.String(),
+		DisplayName: req.DisplayName,
+		Username:    req.Username,
+		Email:       req.Email,
+		Password:    string(encrypt),
+		CreatedAt:   time.Now(),
 	}
 
 	s.Repository.Create(ctx, tx, user)
@@ -88,9 +88,9 @@ func (s *UserServiceImpl) Find(ctx context.Context, req *model.UserFind) []model
 	defer helper.TXCommitOrRollback(tx)
 
 	users := s.Repository.Find(ctx, tx, &domain.User{
-		FullName: req.FullName,
-		Username: req.Username,
-		Email:    req.Email,
+		DisplayName: req.DisplayName,
+		Username:    req.Username,
+		Email:       req.Email,
 	})
 
 	var responseUsers []model.UserResponse
@@ -119,7 +119,7 @@ func (s *UserServiceImpl) UpdateProfile(ctx context.Context, req *model.UserUpda
 	}
 
 	user := &users[0]
-	user.FullName = req.FullName
+	user.DisplayName = req.DisplayName
 	user.Username = req.Username
 	user.Email = req.Email
 

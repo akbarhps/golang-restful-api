@@ -16,13 +16,13 @@ func NewUserRepository() UserRepository {
 
 func (*userRepositoryImpl) Create(ctx context.Context, tx *sql.Tx, user *domain.User) {
 	query := "INSERT INTO users(id, full_name, username, email, password, created_at) VALUES(?, ?, ?, ?, ?, ?)"
-	_, err := tx.ExecContext(ctx, query, user.Id, user.FullName, user.Username, user.Email, user.Password, user.CreatedAt)
+	_, err := tx.ExecContext(ctx, query, user.Id, user.DisplayName, user.Username, user.Email, user.Password, user.CreatedAt)
 	helper.PanicIfError(err)
 }
 
 func (*userRepositoryImpl) Find(ctx context.Context, tx *sql.Tx, user *domain.User) []domain.User {
 	query := "SELECT id, full_name, username, email, password, created_at FROM users WHERE id = ? OR email = ? OR username = ? OR full_name LIKE ?"
-	rows, err := tx.QueryContext(ctx, query, user.Id, user.Email, user.Username, user.FullName)
+	rows, err := tx.QueryContext(ctx, query, user.Id, user.Email, user.Username, user.DisplayName)
 	helper.PanicIfError(err)
 	defer rows.Close()
 
@@ -30,7 +30,7 @@ func (*userRepositoryImpl) Find(ctx context.Context, tx *sql.Tx, user *domain.Us
 	for rows.Next() {
 		var rowUser domain.User
 
-		err = rows.Scan(&rowUser.Id, &rowUser.FullName, &rowUser.Username, &rowUser.Email, &rowUser.Password, &rowUser.CreatedAt)
+		err = rows.Scan(&rowUser.Id, &rowUser.DisplayName, &rowUser.Username, &rowUser.Email, &rowUser.Password, &rowUser.CreatedAt)
 		helper.PanicIfError(err)
 
 		users = append(users, rowUser)
@@ -41,7 +41,7 @@ func (*userRepositoryImpl) Find(ctx context.Context, tx *sql.Tx, user *domain.Us
 
 func (*userRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, user *domain.User) {
 	query := "UPDATE users SET full_name = ?, username = ?, email = ?, password = ? WHERE id = ?"
-	_, err := tx.ExecContext(ctx, query, user.FullName, user.Username, user.Email, user.Password, user.Id)
+	_, err := tx.ExecContext(ctx, query, user.DisplayName, user.Username, user.Email, user.Password, user.Id)
 	helper.PanicIfError(err)
 }
 

@@ -19,21 +19,21 @@ var (
 	db = app.NewDatabase("test")
 
 	responseDomain = domain.User{
-		Id:        uuid.New().String(),
-		FullName:  "test controller",
-		Username:  "testctrl",
-		Email:     "testctrl@test.com",
-		Password:  generatePassword(),
-		CreatedAt: time.Now(),
+		Id:          uuid.New().String(),
+		DisplayName: "test controller",
+		Username:    "testctrl",
+		Email:       "testctrl@test.com",
+		Password:    generatePassword(),
+		CreatedAt:   time.Now(),
 	}
 
 	rawDomain = domain.User{
-		Id:        uuid.New().String(),
-		FullName:  "test controller",
-		Username:  "testctrl",
-		Email:     "testctrl@test.com",
-		Password:  "testctrl",
-		CreatedAt: time.Now(),
+		Id:          uuid.New().String(),
+		DisplayName: "test controller",
+		Username:    "testctrl",
+		Email:       "testctrl@test.com",
+		Password:    "testctrl",
+		CreatedAt:   time.Now(),
 	}
 )
 
@@ -61,7 +61,7 @@ func TestUserServiceImpl_Register(t *testing.T) {
 		userRepository.Mock.On("Create", context.Background(), mock.MatchedBy(func(user *domain.User) bool {
 			assert.Equal(t, rawDomain.Username, user.Username)
 			assert.Equal(t, rawDomain.Email, user.Email)
-			assert.Equal(t, rawDomain.FullName, user.FullName)
+			assert.Equal(t, rawDomain.DisplayName, user.DisplayName)
 			return true
 		}))
 
@@ -69,10 +69,10 @@ func TestUserServiceImpl_Register(t *testing.T) {
 
 		assert.NotPanics(t, func() {
 			resp := userService.Register(context.Background(), &model.UserRegister{
-				FullName: rawDomain.FullName,
-				Username: rawDomain.Username,
-				Email:    rawDomain.Email,
-				Password: rawDomain.Password,
+				DisplayName: rawDomain.DisplayName,
+				Username:    rawDomain.Username,
+				Email:       rawDomain.Email,
+				Password:    rawDomain.Password,
 			})
 			assert.NotNil(t, resp)
 		})
@@ -83,10 +83,10 @@ func TestUserServiceImpl_Register(t *testing.T) {
 
 		assert.Panics(t, func() {
 			res := userService.Register(context.Background(), &model.UserRegister{
-				FullName: "",
-				Username: "",
-				Email:    "",
-				Password: "",
+				DisplayName: "",
+				Username:    "",
+				Email:       "",
+				Password:    "",
 			})
 			assert.Nil(t, res)
 		})
@@ -102,10 +102,10 @@ func TestUserServiceImpl_Register(t *testing.T) {
 
 		assert.PanicsWithError(t, "Username or Email already taken", func() {
 			res := userService.Register(context.Background(), &model.UserRegister{
-				FullName: rawDomain.FullName,
-				Username: rawDomain.Username,
-				Email:    rawDomain.Email,
-				Password: rawDomain.Password,
+				DisplayName: rawDomain.DisplayName,
+				Username:    rawDomain.Username,
+				Email:       rawDomain.Email,
+				Password:    rawDomain.Password,
 			})
 			assert.Nil(t, res)
 		})
@@ -187,10 +187,10 @@ func TestUserServiceImpl_UpdateProfile(t *testing.T) {
 
 		assert.NotPanics(t, func() {
 			res := userService.UpdateProfile(context.Background(), &model.UserUpdateProfile{
-				Id:       rawDomain.Id,
-				Email:    rawDomain.Email,
-				FullName: rawDomain.FullName,
-				Username: rawDomain.Username,
+				Id:          rawDomain.Id,
+				Email:       rawDomain.Email,
+				DisplayName: rawDomain.DisplayName,
+				Username:    rawDomain.Username,
 			})
 			assert.NotNil(t, res)
 		})
@@ -201,10 +201,10 @@ func TestUserServiceImpl_UpdateProfile(t *testing.T) {
 
 		assert.Panics(t, func() {
 			res := userService.UpdateProfile(context.Background(), &model.UserUpdateProfile{
-				Id:       uuid.New().String(),
-				FullName: "",
-				Username: "",
-				Email:    "",
+				Id:          uuid.New().String(),
+				DisplayName: "",
+				Username:    "",
+				Email:       "",
 			})
 			assert.Nil(t, res)
 		})
@@ -221,10 +221,10 @@ func TestUserServiceImpl_UpdateProfile(t *testing.T) {
 
 		assert.PanicsWithError(t, "Record not found", func() {
 			res := userService.UpdateProfile(context.Background(), &model.UserUpdateProfile{
-				Id:       rawDomain.Id,
-				FullName: rawDomain.FullName,
-				Username: rawDomain.Username,
-				Email:    rawDomain.Email,
+				Id:          rawDomain.Id,
+				DisplayName: rawDomain.DisplayName,
+				Username:    rawDomain.Username,
+				Email:       rawDomain.Email,
 			})
 			assert.Nil(t, res)
 		})

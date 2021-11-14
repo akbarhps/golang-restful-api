@@ -74,9 +74,9 @@ func (c *userControllerImpl) Login(ctx *gin.Context) {
 
 func (c *userControllerImpl) Find(ctx *gin.Context) {
 	requestModel := &model.UserFind{
-		Username: ctx.Params.ByName("key"),
-		Email:    ctx.Params.ByName("key"),
-		FullName: ctx.Params.ByName("key"),
+		Username:    ctx.Params.ByName("key"),
+		Email:       ctx.Params.ByName("key"),
+		DisplayName: ctx.Params.ByName("key"),
 	}
 
 	response := c.Service.Find(context.Background(), requestModel)
