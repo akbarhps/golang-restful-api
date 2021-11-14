@@ -19,7 +19,7 @@ var (
 	db = app.NewDatabase("test")
 
 	responseDomain = domain.User{
-		Id:        uuid.New(),
+		Id:        uuid.New().String(),
 		FullName:  "test controller",
 		Username:  "testctrl",
 		Email:     "testctrl@test.com",
@@ -28,7 +28,7 @@ var (
 	}
 
 	rawDomain = domain.User{
-		Id:        uuid.New(),
+		Id:        uuid.New().String(),
 		FullName:  "test controller",
 		Username:  "testctrl",
 		Email:     "testctrl@test.com",
@@ -201,7 +201,7 @@ func TestUserServiceImpl_UpdateProfile(t *testing.T) {
 
 		assert.Panics(t, func() {
 			res := userService.UpdateProfile(context.Background(), &model.UserUpdateProfile{
-				Id:       uuid.New(),
+				Id:       uuid.New().String(),
 				FullName: "",
 				Username: "",
 				Email:    "",
@@ -266,7 +266,7 @@ func TestUserServiceImpl_UpdatePassword(t *testing.T) {
 			userService, _ := setup()
 
 			userService.UpdatePassword(context.Background(), &model.UserUpdatePassword{
-				Id:          uuid.New(),
+				Id:          uuid.New().String(),
 				OldPassword: "",
 				NewPassword: "",
 			})
@@ -340,7 +340,7 @@ func TestUserServiceImpl_Delete(t *testing.T) {
 			userService, _ := setup()
 
 			userService.Delete(context.Background(), &model.UserDelete{
-				Id: uuid.New(),
+				Id: uuid.New().String(),
 			})
 		})
 	})

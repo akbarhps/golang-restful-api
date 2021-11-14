@@ -48,7 +48,7 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *model.UserRegister)
 	helper.PanicIfError(err)
 
 	user := &domain.User{
-		Id:        uid,
+		Id:        uid.String(),
 		FullName:  req.FullName,
 		Username:  req.Username,
 		Email:     req.Email,

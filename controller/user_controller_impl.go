@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"github.com/google/uuid"
 	"go-api/helper"
 	"go-api/model"
 	"go-api/service"
@@ -94,7 +93,7 @@ func (c *userControllerImpl) UpdateProfile(ctx *gin.Context) {
 	err := ctx.BindJSON(requestModel)
 	helper.PanicIfError(err)
 
-	requestModel.Id = uuid.MustParse(ctx.Request.Header.Get("Uid"))
+	requestModel.Id = ctx.Request.Header.Get("Uid")
 	response := c.Service.UpdateProfile(context.Background(), requestModel)
 
 	ctx.IndentedJSON(http.StatusOK, &model.WebResponse{
@@ -109,7 +108,7 @@ func (c *userControllerImpl) UpdatePassword(ctx *gin.Context) {
 	err := ctx.BindJSON(requestModel)
 	helper.PanicIfError(err)
 
-	requestModel.Id = uuid.MustParse(ctx.Request.Header.Get("Uid"))
+	requestModel.Id = ctx.Request.Header.Get("Uid")
 	c.Service.UpdatePassword(context.Background(), requestModel)
 
 	ctx.IndentedJSON(http.StatusOK, &model.WebResponse{
@@ -123,7 +122,7 @@ func (c *userControllerImpl) Delete(ctx *gin.Context) {
 	err := ctx.BindJSON(requestModel)
 	helper.PanicIfError(err)
 
-	requestModel.Id = uuid.MustParse(ctx.Request.Header.Get("Uid"))
+	requestModel.Id = ctx.Request.Header.Get("Uid")
 	c.Service.Delete(context.Background(), requestModel)
 
 	ctx.IndentedJSON(http.StatusOK, &model.WebResponse{

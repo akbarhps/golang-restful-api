@@ -14,7 +14,7 @@ func GenerateJWT(user *model.UserResponse) (string, error) {
 		Roles: []string{"user"},
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: jwt.TimeFunc().Add(time.Hour * 24).Unix(),
-			Id:        user.Id.String(),
+			Id:        user.Id,
 			IssuedAt:  jwt.TimeFunc().Unix(),
 			Issuer:    "gojekclone",
 			NotBefore: jwt.TimeFunc().Unix(),

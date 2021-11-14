@@ -30,7 +30,7 @@ func createUser() *domain.User {
 	helper.PanicIfError(err)
 
 	return &domain.User{
-		Id:        uid,
+		Id:        uid.String(),
 		FullName:  "test repo",
 		Username:  "testrepo",
 		Email:     "testrepo@test.com",

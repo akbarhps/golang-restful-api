@@ -3,12 +3,10 @@ package domain
 import (
 	"go-api/model"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type User struct {
-	Id        uuid.UUID
+	Id        string
 	FullName  string
 	Username  string
 	Email     string

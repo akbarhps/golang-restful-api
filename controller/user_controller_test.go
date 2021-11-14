@@ -31,7 +31,7 @@ var userService service.UserService
 var userRepository repository.UserRepository
 
 type userTest struct {
-	Id          uuid.UUID `json:"id"`
+	Id          string    `json:"id"`
 	FullName    string    `json:"full_name"`
 	Username    string    `json:"username"`
 	Email       string    `json:"email"`
@@ -72,7 +72,7 @@ var (
 		CreatedAt:   time.Now(),
 	}
 	userTestInvalid = &userTest{
-		Id:          uuid.UUID{},
+		Id:          uuid.UUID{}.String(),
 		FullName:    "",
 		Username:    "",
 		Email:       "",
