@@ -29,7 +29,7 @@ func (*repositoryImpl) Create(tx *gorm.DB, post *Post) {
 
 func (*repositoryImpl) Update(tx *gorm.DB, post *Post) {
 	err := tx.Model(&Post{}).
-		Where("post_id = ? AND user_id = ?", post.PostID, post.UserID).
+		Where("post_id = ? AND user_id = ?", post.ID, post.UserID).
 		Updates(&Post{
 			Caption:   post.Caption,
 			UpdatedAt: post.UpdatedAt,

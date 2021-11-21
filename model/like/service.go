@@ -33,7 +33,7 @@ func (s *serviceImpl) Create(ctx context.Context, req *Request) {
 	defer helper.TXCommitOrRollback(tx)
 
 	like := s.likeRepo.FindByPostIDAndUserID(tx, req.PostID, req.UserID)
-	if like.LikeID != 0 {
+	if like.ID != 0 {
 		panic(exception.DuplicateError{Message:"can't like post more than once"})
 	}
 
@@ -54,9 +54,9 @@ func (s *serviceImpl) Delete(ctx context.Context, req *Request) {
 	defer helper.TXCommitOrRollback(tx)
 
 	like := s.likeRepo.FindByPostIDAndUserID(tx, req.PostID, req.UserID)
-	if like.LikeID == 0 {
+	if like.ID == 0 {
 		panic(exception.NotFoundError{Message: "like not found"})
 	}
 
-	s.likeRepo.Delete(tx, like.LikeID)
+	s.likeRepo.Delete(tx, like.ID)
 }

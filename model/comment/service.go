@@ -50,9 +50,9 @@ func (s *serviceImpl) Delete(ctx context.Context, req *DeleteRequest) {
 	defer helper.TXCommitOrRollback(tx)
 
 	comment := s.commentRepo.FindByPostIDAndUserID(tx, req.PostID, req.UserID)
-	if comment.CommentID == 0 {
+	if comment.ID == 0 {
 		panic(exception.NotFoundError{Message: "comment not found"})
 	}
 
-	s.commentRepo.Delete(tx, comment.CommentID)
+	s.commentRepo.Delete(tx, comment.ID)
 }

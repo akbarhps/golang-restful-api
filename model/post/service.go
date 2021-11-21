@@ -43,7 +43,7 @@ func (s *serviceImpl) Create(ctx context.Context, req *CreateRequest) *DetailRes
 	defer helper.TXCommitOrRollback(tx)
 
 	post := &Post{
-		PostID:    uuid.NewV4().String(),
+		ID:        uuid.NewV4().String(),
 		Caption:   req.Caption,
 		UserID:    req.UserID,
 		CreatedAt: time.Now(),
@@ -53,9 +53,9 @@ func (s *serviceImpl) Create(ctx context.Context, req *CreateRequest) *DetailRes
 
 	var resourcesResp []resource.Response
 	for _, r := range req.Resources {
-		r.ResourceID = uuid.NewV4().String()
+		r.ID = uuid.NewV4().String()
 		r.CreatedAt = time.Now()
-		r.PostID = post.PostID
+		r.PostID = post.ID
 		s.resourceRepository.Create(tx, &r)
 
 		resourcesResp = append(resourcesResp, resource.Response{
@@ -64,7 +64,7 @@ func (s *serviceImpl) Create(ctx context.Context, req *CreateRequest) *DetailRes
 	}
 
 	return &DetailResponse{
-		PostID:    post.PostID,
+		PostID:    post.ID,
 		Caption:   post.Caption,
 		Resources: resourcesResp,
 		CreatedAt: post.CreatedAt,
@@ -91,7 +91,7 @@ func (s *serviceImpl) Update(ctx context.Context, req *UpdateRequest) {
 	}
 
 	s.postRepository.Update(tx, &Post{
-		PostID:    fPost.PostID,
+		ID:        fPost.ID,
 		Caption:   req.Caption,
 		UserID:    fPost.UserID,
 		UpdatedAt: time.Now(),
@@ -116,7 +116,7 @@ func (s *serviceImpl) Delete(ctx context.Context, req *DeleteRequest) {
 		panic(exception.NoAccessError{Message: "can't delete other person post"})
 	}
 
-	s.postRepository.Delete(tx, fPost.PostID)
+	s.postRepository.Delete(tx, fPost.ID)
 }
 
 func (s *serviceImpl) FindByPostID(ctx context.Context, postID, viewerID string) *DetailResponse {
@@ -124,7 +124,7 @@ func (s *serviceImpl) FindByPostID(ctx context.Context, postID, viewerID string)
 	defer helper.TXCommitOrRollback(tx)
 
 	post := s.postRepository.FindByPostID(tx, postID)
-	if post.PostID == "" {
+	if post.ID == "" {
 		panic(exception.NotFoundError{Message: "post not found"})
 	}
 
@@ -139,7 +139,7 @@ func (s *serviceImpl) FindByPostID(ctx context.Context, postID, viewerID string)
 	likesCount, hasViewerLiked := s.likeRepository.CountByPostID(tx, postID, viewerID)
 	commentsCount := s.commentRepository.CountByPostID(tx, postID)
 	return &DetailResponse{
-		PostID:         post.PostID,
+		PostID:         post.ID,
 		Caption:        post.Caption,
 		Resources:      resResponse,
 		LikesCount:     likesCount,
@@ -157,14 +157,14 @@ func (s *serviceImpl) FindByUserID(ctx context.Context, userID string) []*Respon
 	var response []*Response
 	posts := s.postRepository.FindByUserID(tx, userID)
 	for _, p := range posts {
-		res, resCount := s.resourceRepository.FindFirstByPostID(tx, p.PostID)
+		res, resCount := s.resourceRepository.FindFirstByPostID(tx, p.ID)
 		resourceResp := &resource.Response{ShareURL: res.ShareURL}
 
-		likesCount, _ := s.likeRepository.CountByPostID(tx, p.PostID, userID)
-		commentsCount := s.commentRepository.CountByPostID(tx, p.PostID)
+		likesCount, _ := s.likeRepository.CountByPostID(tx, p.ID, userID)
+		commentsCount := s.commentRepository.CountByPostID(tx, p.ID)
 
 		response = append(response, &Response{
-			PostID:        p.PostID,
+			PostID:        p.ID,
 			Thumbnail:     resourceResp,
 			ResourceCount: resCount,
 			LikesCount:    likesCount,

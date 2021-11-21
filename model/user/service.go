@@ -229,7 +229,7 @@ func (s *serviceImpl) SearchLike(ctx context.Context, keyword string) []*SearchR
 		sResponse = append(sResponse, &SearchResponse{
 			Username:          user.Username,
 			DisplayName:       user.DisplayName,
-			ProfilePictureURL: user.Username,
+			//ProfilePictureURL: user.ProfilePictureURL,
 		})
 	}
 	return sResponse
