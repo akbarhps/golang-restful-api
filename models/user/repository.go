@@ -7,14 +7,14 @@ import (
 )
 
 type Repository interface {
-	Create(tx *gorm.DB, user *User)
-	Update(tx *gorm.DB, user *User)
-	Delete(tx *gorm.DB, user *User)
-	FindById(tx *gorm.DB, id string) *User
-	FindLike(tx *gorm.DB, keyword string) []*User
-	FindByEmail(tx *gorm.DB, email string) *User
-	FindByUsername(tx *gorm.DB, username string) *User
-	FindByEmailOrUsername(tx *gorm.DB, handler string) *User
+	Create(tx *gorm.DB, user *Entity)
+	Update(tx *gorm.DB, user *Entity)
+	Delete(tx *gorm.DB, user *Entity)
+	FindById(tx *gorm.DB, id string) *Entity
+	FindLike(tx *gorm.DB, keyword string) []*Entity
+	FindByEmail(tx *gorm.DB, email string) *Entity
+	FindByUsername(tx *gorm.DB, username string) *Entity
+	FindByEmailOrUsername(tx *gorm.DB, handler string) *Entity
 }
 
 type repositoryImpl struct {
@@ -24,17 +24,17 @@ func NewRepository() Repository {
 	return &repositoryImpl{}
 }
 
-func (*repositoryImpl) Create(tx *gorm.DB, user *User) {
+func (*repositoryImpl) Create(tx *gorm.DB, user *Entity) {
 	err := tx.Create(&user).Error
 	if err != nil {
 		panic(exception.DatabaseError{Message: err.Error()})
 	}
 }
 
-func (*repositoryImpl) Update(tx *gorm.DB, user *User) {
-	err := tx.Model(&User{}).
+func (*repositoryImpl) Update(tx *gorm.DB, user *Entity) {
+	err := tx.Model(&Entity{}).
 		Where("user_id = ?", user.ID).
-		Updates(&User{
+		Updates(&Entity{
 			DisplayName: user.DisplayName,
 			Username:    user.Username,
 			Email:       user.Email,
@@ -46,15 +46,15 @@ func (*repositoryImpl) Update(tx *gorm.DB, user *User) {
 	}
 }
 
-func (*repositoryImpl) Delete(tx *gorm.DB, user *User) {
+func (*repositoryImpl) Delete(tx *gorm.DB, user *Entity) {
 	err := tx.Where(&user).Delete(&user).Error
 	if err != nil {
 		panic(exception.DatabaseError{Message: err.Error()})
 	}
 }
 
-func (*repositoryImpl) FindById(tx *gorm.DB, id string) *User {
-	var user *User
+func (*repositoryImpl) FindById(tx *gorm.DB, id string) *Entity {
+	var user *Entity
 	err := tx.Where("user_id = ?", id).
 		Limit(1).
 		Find(&user).Error
@@ -64,8 +64,8 @@ func (*repositoryImpl) FindById(tx *gorm.DB, id string) *User {
 	return user
 }
 
-func (*repositoryImpl) FindLike(tx *gorm.DB, keyword string) []*User {
-	var users []*User
+func (*repositoryImpl) FindLike(tx *gorm.DB, keyword string) []*Entity {
+	var users []*Entity
 	query := "username LIKE ? OR display_name LIKE ?"
 	key := "%" + keyword + "%"
 	err := tx.Where(query, key, key).Find(&users).Error
@@ -75,8 +75,8 @@ func (*repositoryImpl) FindLike(tx *gorm.DB, keyword string) []*User {
 	return users
 }
 
-func (*repositoryImpl) FindByEmail(tx *gorm.DB, email string) *User {
-	var user *User
+func (*repositoryImpl) FindByEmail(tx *gorm.DB, email string) *Entity {
+	var user *Entity
 	err := tx.Where("email = ?", email).
 		Limit(1).
 		Find(&user).Error
@@ -86,8 +86,8 @@ func (*repositoryImpl) FindByEmail(tx *gorm.DB, email string) *User {
 	return user
 }
 
-func (*repositoryImpl) FindByUsername(tx *gorm.DB, username string) *User {
-	var user *User
+func (*repositoryImpl) FindByUsername(tx *gorm.DB, username string) *Entity {
+	var user *Entity
 	err := tx.Where("username = ?", username).
 		Limit(1).
 		Find(&user).Error
@@ -97,8 +97,8 @@ func (*repositoryImpl) FindByUsername(tx *gorm.DB, username string) *User {
 	return user
 }
 
-func (*repositoryImpl) FindByEmailOrUsername(tx *gorm.DB, handler string) *User {
-	var user *User
+func (*repositoryImpl) FindByEmailOrUsername(tx *gorm.DB, handler string) *Entity {
+	var user *Entity
 	err := tx.Where("email = ? OR username = ?", handler, handler).
 		Limit(1).
 		Find(&user).Error
