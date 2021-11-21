@@ -43,7 +43,7 @@ func (c *controllerImpl) Create(ctx *gin.Context) {
 	}
 
 	for i, file := range files {
-		filePath := "res/posts/" + file.Filename
+		filePath := "../../res/posts/" + file.Filename
 		err = ctx.SaveUploadedFile(file, filePath)
 		if err != nil {
 			panic(err)
