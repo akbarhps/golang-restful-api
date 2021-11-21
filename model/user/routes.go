@@ -2,7 +2,7 @@ package user
 
 import "github.com/gin-gonic/gin"
 
-func InitRoutes(router *gin.Engine, controller Controller) {
+func InitRoutes(router *gin.RouterGroup, controller Controller) {
 	userGroup := router.Group("/user")
 	userGroup.POST("/", controller.Register)
 	userGroup.PUT("/edit/", controller.UpdateProfile)

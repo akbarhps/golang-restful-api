@@ -16,10 +16,6 @@ func main() {
 	app.Init()
 	validate := validator.New()
 
-	router := gin.Default()
-	router.Use(middleware.JWTValidator())
-	router.Use(gin.CustomRecovery(middleware.PanicHandler))
-
 	// repositories
 	userRepository := user.NewRepository()
 	postRepository := post.NewRepository()
@@ -39,11 +35,17 @@ func main() {
 	likeController := like.NewController(likeService)
 	commentController := comment.NewController(commentService)
 
-	// Routes
-	user.InitRoutes(router, userController)
-	post.InitRoutes(router, postController)
-	like.InitRoutes(router, likeController)
-	comment.InitRoutes(router, commentController)
+	router := gin.Default()
+	router.Use(middleware.JWTValidator())
+	router.Use(gin.CustomRecovery(middleware.PanicHandler))
+
+	apiGroup := router.Group("/api")
+
+	// routes
+	user.InitRoutes(apiGroup, userController)
+	post.InitRoutes(apiGroup, postController)
+	like.InitRoutes(apiGroup, likeController)
+	comment.InitRoutes(apiGroup, commentController)
 
 	err := router.Run(":3000")
 	if err != nil {
