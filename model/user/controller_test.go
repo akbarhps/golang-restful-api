@@ -17,88 +17,13 @@ import (
 	"testing"
 )
 
-var (
-	router     *gin.Engine
-	repository user.Repository
-	service    user.Service
-	controller user.Controller
-
-	registerValid = &user.RegisterRequest{
-		Email:       "testcontroller@test.com",
-		Username:    "testcontroller",
-		DisplayName: "test controller",
-		Password:    "testcontroller",
-	}
-
-	registerEmpty = &user.RegisterRequest{
-		Email:       "",
-		Username:    "",
-		DisplayName: "",
-		Password:    "",
-	}
-
-	loginValid = &user.LoginRequest{
-		Handler:  "testcontroller",
-		Password: "testcontroller",
-	}
-
-	loginWrongPassword = &user.LoginRequest{
-		Handler:  "testcontroller",
-		Password: "testcontroller1",
-	}
-
-	loginNotRegistered = &user.LoginRequest{
-		Handler:  "notregistered",
-		Password: "notregistered",
-	}
-
-	loginEmpty = &user.LoginRequest{
-		Handler:  "",
-		Password: "",
-	}
-
-	updateProfileValid = &user.UpdateProfileRequest{
-		UserID:      "",
-		Email:       "controllerupdate@test.com",
-		Username:    "controllerupdate",
-		DisplayName: "controller update",
-		Biography:   "controller update",
-	}
-
-	updateProfileEmpty = &user.UpdateProfileRequest{
-		UserID:      "",
-		Email:       "",
-		Username:    "",
-		DisplayName: "",
-		Biography:   "",
-	}
-
-	updatePasswordValid = &user.UpdatePasswordRequest{
-		UserID:      "",
-		OldPassword: "testcontroller",
-		NewPassword: "controllerupdate1",
-	}
-
-	updatePasswordWrongOldPassword = &user.UpdatePasswordRequest{
-		UserID:      "",
-		OldPassword: "controllerupdate1",
-		NewPassword: "controllerupdate",
-	}
-
-	updatePasswordEmpty = &user.UpdatePasswordRequest{
-		UserID:      "",
-		OldPassword: "",
-		NewPassword: "",
-	}
-)
-
-func setupControllerTest() {
+func setupControllerTest() (*gin.Engine, user.Service) {
 	app.TestDBInit()
-	repository = user.NewRepository()
-	service = user.NewService(validator.New(), repository)
-	controller = user.NewController(service)
+	repository := user.NewRepository()
+	service := user.NewService(validator.New(), repository)
+	controller := user.NewController(service)
 
-	router = gin.Default()
+	router := gin.Default()
 	router.Use(middleware.JWTValidator())
 	router.Use(gin.CustomRecovery(middleware.PanicHandler))
 
@@ -112,11 +37,28 @@ func setupControllerTest() {
 	router.PUT("/user/password", controller.UpdatePassword)
 
 	app.GetDB().Exec("DELETE FROM users")
+	return router, service
 }
 
 func TestControllerImpl_Register(t *testing.T) {
+	var (
+		registerValid = &user.RegisterRequest{
+			Email:       "testcontroller@test.com",
+			Username:    "testcontroller",
+			DisplayName: "test controller",
+			Password:    "testcontroller",
+		}
+
+		registerEmpty = &user.RegisterRequest{
+			Email:       "",
+			Username:    "",
+			DisplayName: "",
+			Password:    "",
+		}
+	)
+
 	t.Run("success should return uid, jwt, and set jwt cookie", func(t *testing.T) {
-		setupControllerTest()
+		router, _ := setupControllerTest()
 		req := httptest.NewRequest(
 			"POST",
 			"/user/register",
@@ -144,7 +86,7 @@ func TestControllerImpl_Register(t *testing.T) {
 	})
 
 	t.Run("empty input should return bad request", func(t *testing.T) {
-		setupControllerTest()
+		router, _ := setupControllerTest()
 		req := httptest.NewRequest(
 			"POST",
 			"/user/register",
@@ -172,7 +114,7 @@ func TestControllerImpl_Register(t *testing.T) {
 	})
 
 	t.Run("taken email or username should return bad request", func(t *testing.T) {
-		setupControllerTest()
+		router, service := setupControllerTest()
 		service.Register(context.Background(), registerValid)
 		req := httptest.NewRequest(
 			"POST",
@@ -202,8 +144,37 @@ func TestControllerImpl_Register(t *testing.T) {
 }
 
 func TestControllerImpl_Login(t *testing.T) {
+	var (
+		registerValid = &user.RegisterRequest{
+			Email:       "testcontroller@test.com",
+			Username:    "testcontroller",
+			DisplayName: "test controller",
+			Password:    "testcontroller",
+		}
+
+		loginValid = &user.LoginRequest{
+			Handler:  "testcontroller",
+			Password: "testcontroller",
+		}
+
+		loginWrongPassword = &user.LoginRequest{
+			Handler:  "testcontroller",
+			Password: "testcontroller1",
+		}
+
+		loginNotRegistered = &user.LoginRequest{
+			Handler:  "notregistered",
+			Password: "notregistered",
+		}
+
+		loginEmpty = &user.LoginRequest{
+			Handler:  "",
+			Password: "",
+		}
+	)
+
 	t.Run("success should return user_id, token and set cookie", func(t *testing.T) {
-		setupControllerTest()
+		router, service := setupControllerTest()
 		service.Register(context.Background(), registerValid)
 		req := httptest.NewRequest(
 			"POST",
@@ -232,7 +203,7 @@ func TestControllerImpl_Login(t *testing.T) {
 	})
 
 	t.Run("not registered username or password should return not found", func(t *testing.T) {
-		setupControllerTest()
+		router, _ := setupControllerTest()
 		req := httptest.NewRequest(
 			"POST",
 			"/user/login",
@@ -260,7 +231,7 @@ func TestControllerImpl_Login(t *testing.T) {
 	})
 
 	t.Run("wrong password should return bad request", func(t *testing.T) {
-		setupControllerTest()
+		router, service := setupControllerTest()
 		service.Register(context.Background(), registerValid)
 		req := httptest.NewRequest(
 			"POST",
@@ -289,7 +260,7 @@ func TestControllerImpl_Login(t *testing.T) {
 	})
 
 	t.Run("empty input should return bad request", func(t *testing.T) {
-		setupControllerTest()
+		router, _ := setupControllerTest()
 		req := httptest.NewRequest(
 			"POST",
 			"/user/login",
@@ -318,8 +289,32 @@ func TestControllerImpl_Login(t *testing.T) {
 }
 
 func TestControllerImpl_UpdateProfile(t *testing.T) {
+	var (
+		registerValid = &user.RegisterRequest{
+			Email:       "testcontroller@test.com",
+			Username:    "testcontroller",
+			DisplayName: "test controller",
+			Password:    "testcontroller",
+		}
+
+		updateProfileValid = &user.UpdateProfileRequest{
+			UserID:      "",
+			Email:       "controllerupdate@test.com",
+			Username:    "controllerupdate",
+			DisplayName: "controller update",
+			Biography:   "controller update",
+		}
+
+		updateProfileEmpty = &user.UpdateProfileRequest{
+			UserID:      "",
+			Email:       "",
+			Username:    "",
+			DisplayName: "",
+			Biography:   "",
+		}
+	)
 	t.Run("success should return ok", func(t *testing.T) {
-		setupControllerTest()
+		router, service := setupControllerTest()
 		cred := service.Register(context.Background(), registerValid)
 		req := httptest.NewRequest(
 			"PUT",
@@ -350,7 +345,7 @@ func TestControllerImpl_UpdateProfile(t *testing.T) {
 	})
 
 	t.Run("no token (jwt) should return unauthorized", func(t *testing.T) {
-		setupControllerTest()
+		router, _ := setupControllerTest()
 		req := httptest.NewRequest(
 			"PUT",
 			"/user/edit",
@@ -376,7 +371,7 @@ func TestControllerImpl_UpdateProfile(t *testing.T) {
 	})
 
 	t.Run("empty input should return bad request", func(t *testing.T) {
-		setupControllerTest()
+		router, service := setupControllerTest()
 		cred := service.Register(context.Background(), registerValid)
 		req := httptest.NewRequest(
 			"PUT",
@@ -408,8 +403,34 @@ func TestControllerImpl_UpdateProfile(t *testing.T) {
 }
 
 func TestControllerImpl_UpdatePassword(t *testing.T) {
+	var (
+		registerValid = &user.RegisterRequest{
+			Email:       "testcontroller@test.com",
+			Username:    "testcontroller",
+			DisplayName: "test controller",
+			Password:    "testcontroller",
+		}
+
+		updatePasswordValid = &user.UpdatePasswordRequest{
+			UserID:      "",
+			OldPassword: "testcontroller",
+			NewPassword: "controllerupdate1",
+		}
+
+		updatePasswordWrongOldPassword = &user.UpdatePasswordRequest{
+			UserID:      "",
+			OldPassword: "controllerupdate1",
+			NewPassword: "controllerupdate",
+		}
+
+		updatePasswordEmpty = &user.UpdatePasswordRequest{
+			UserID:      "",
+			OldPassword: "",
+			NewPassword: "",
+		}
+	)
 	t.Run("success should return ok", func(t *testing.T) {
-		setupControllerTest()
+		router, service := setupControllerTest()
 		cred := service.Register(context.Background(), registerValid)
 		req := httptest.NewRequest(
 			"PUT",
@@ -440,7 +461,7 @@ func TestControllerImpl_UpdatePassword(t *testing.T) {
 	})
 
 	t.Run("no token (jwt) should return unauthorized", func(t *testing.T) {
-		setupControllerTest()
+		router, _ := setupControllerTest()
 		req := httptest.NewRequest(
 			"PUT",
 			"/user/password",
@@ -466,7 +487,7 @@ func TestControllerImpl_UpdatePassword(t *testing.T) {
 	})
 
 	t.Run("empty input should return bad request", func(t *testing.T) {
-		setupControllerTest()
+		router, service := setupControllerTest()
 		cred := service.Register(context.Background(), registerValid)
 		req := httptest.NewRequest(
 			"PUT",
@@ -497,7 +518,7 @@ func TestControllerImpl_UpdatePassword(t *testing.T) {
 	})
 
 	t.Run("wrong old password should return bad request", func(t *testing.T) {
-		setupControllerTest()
+		router, service := setupControllerTest()
 		cred := service.Register(context.Background(), registerValid)
 		req := httptest.NewRequest(
 			"PUT",
@@ -529,8 +550,16 @@ func TestControllerImpl_UpdatePassword(t *testing.T) {
 }
 
 func TestControllerImpl_FindByUsername(t *testing.T) {
+	var (
+		registerValid = &user.RegisterRequest{
+			Email:       "testcontroller@test.com",
+			Username:    "testcontroller",
+			DisplayName: "test controller",
+			Password:    "testcontroller",
+		}
+	)
 	t.Run("success should return data user", func(t *testing.T) {
-		setupControllerTest()
+		router, service := setupControllerTest()
 		cred := service.Register(context.Background(), registerValid)
 		req := httptest.NewRequest(
 			"GET",
@@ -562,7 +591,7 @@ func TestControllerImpl_FindByUsername(t *testing.T) {
 	})
 
 	t.Run("no token (jwt) should return unauthorized", func(t *testing.T) {
-		setupControllerTest()
+		router, _ := setupControllerTest()
 		req := httptest.NewRequest(
 			"GET",
 			"/user/testcontroller",
@@ -589,7 +618,7 @@ func TestControllerImpl_FindByUsername(t *testing.T) {
 	})
 
 	t.Run("not found username should return not found", func(t *testing.T) {
-		setupControllerTest()
+		router, service := setupControllerTest()
 		cred := service.Register(context.Background(), registerValid)
 		req := httptest.NewRequest(
 			"GET",
@@ -622,8 +651,16 @@ func TestControllerImpl_FindByUsername(t *testing.T) {
 }
 
 func TestControllerImpl_Search(t *testing.T) {
+	var (
+		registerValid = &user.RegisterRequest{
+			Email:       "testcontroller@test.com",
+			Username:    "testcontroller",
+			DisplayName: "test controller",
+			Password:    "testcontroller",
+		}
+	)
 	t.Run("success should return array data of users", func(t *testing.T) {
-		setupControllerTest()
+		router, service := setupControllerTest()
 		cred := service.Register(context.Background(), registerValid)
 		req := httptest.NewRequest(
 			"GET",
@@ -655,7 +692,7 @@ func TestControllerImpl_Search(t *testing.T) {
 	})
 
 	t.Run("no token (jwt) should return unauthorized", func(t *testing.T) {
-		setupControllerTest()
+		router, _ := setupControllerTest()
 		req := httptest.NewRequest(
 			"GET",
 			"/user?handler=test",
@@ -682,7 +719,7 @@ func TestControllerImpl_Search(t *testing.T) {
 	})
 
 	t.Run("not found should return ok with empty array data", func(t *testing.T) {
-		setupControllerTest()
+		router, service := setupControllerTest()
 		cred := service.Register(context.Background(), registerValid)
 		req := httptest.NewRequest(
 			"GET",
@@ -713,4 +750,3 @@ func TestControllerImpl_Search(t *testing.T) {
 		t.Log(webResponse)
 	})
 }
-
