@@ -18,8 +18,16 @@ type (
 	}
 
 	WrongPasswordError struct {
-        Message string `json:"message"`
-    }
+		Message string `json:"message"`
+	}
+
+	NoAccessError struct {
+		Message string `json:"message"`
+	}
+
+	DuplicateError struct {
+		Message string `json:"message"`
+	}
 
 	FieldError struct {
 		Field   string `json:"field"`
@@ -40,6 +48,14 @@ func (e DatabaseError) Error() string {
 }
 
 func (e WrongPasswordError) Error() string {
+	return e.Message
+}
+
+func (e NoAccessError) Error() string {
+	return e.Message
+}
+
+func (e DuplicateError) Error() string {
     return e.Message
 }
 

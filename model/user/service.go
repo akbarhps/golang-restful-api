@@ -14,10 +14,8 @@ import (
 type Service interface {
 	Register(ctx context.Context, req *RegisterRequest) *AuthResponse
 	Login(ctx context.Context, req *LoginRequest) *AuthResponse
-
 	UpdateProfile(ctx context.Context, req *UpdateProfileRequest)
 	UpdatePassword(ctx context.Context, req *UpdatePasswordRequest)
-
 	FindByUsername(ctx context.Context, username string) *Response
 	SearchLike(ctx context.Context, keyword string) []*SearchResponse
 }

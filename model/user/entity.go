@@ -2,7 +2,7 @@ package user
 
 import "time"
 
-type Entity struct {
+type User struct {
 	ID          string    `gorm:"column:user_id; not null, primaryKey"`
 	Email       string    `gorm:"column:email; not null"`
 	Username    string    `gorm:"column:username; not null"`
@@ -15,7 +15,7 @@ type Entity struct {
 	UpdatedAt   time.Time `gorm:"column:updated_at; not null"`
 }
 
-func (u *Entity) ToResponse() *Response {
+func (u *User) ToResponse() *Response {
 	return &Response{
 		Username:          u.Username,
 		DisplayName:       u.DisplayName,

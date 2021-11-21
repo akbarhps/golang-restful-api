@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"go-api/helper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/callbacks"
@@ -23,7 +22,9 @@ func Init() *gorm.DB {
 	}), &gorm.Config{
 		SkipDefaultTransaction: true,
 	})
-	helper.PanicIfError(err)
+	if err != nil {
+		panic(err)
+	}
 
 	sqlDB, err := db.DB()
 	sqlDB.SetMaxIdleConns(5)
@@ -44,7 +45,9 @@ func TestDBInit() *gorm.DB {
 	}), &gorm.Config{
 		SkipDefaultTransaction: true,
 	})
-	helper.PanicIfError(err)
+	if err != nil {
+		panic(err)
+	}
 
 	sqlDB, err := testDB.DB()
 	sqlDB.SetMaxIdleConns(5)

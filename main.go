@@ -4,34 +4,49 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator"
 	"go-api/app"
-	"go-api/controller"
-	"go-api/helper"
 	"go-api/middleware"
-	"go-api/repository"
-	"go-api/service"
+	"go-api/model/comment"
+	"go-api/model/like"
+	"go-api/model/post"
+	"go-api/model/resource"
+	"go-api/model/user"
 )
 
 func main() {
-	r := gin.Default()
-	db := app.NewDatabase("prod")
+	app.Init()
 	validate := validator.New()
 
-	// middleware
-	r.Use(middleware.JWTValidator())
-	r.Use(gin.CustomRecovery(middleware.PanicHandler))
+	router := gin.Default()
+	router.Use(middleware.JWTValidator())
+	router.Use(gin.CustomRecovery(middleware.PanicHandler))
 
-	// repository
-	userRepository := repository.NewUserRepository()
+	// repositories
+	userRepository := user.NewRepository()
+	postRepository := post.NewRepository()
+	likeRepository := like.NewRepository()
+	commentRepository := comment.NewRepository()
+	resourceRepository := resource.NewRepository()
 
-	// service
-	userService := service.NewUserService(db, validate, userRepository)
+	// services
+	userService := user.NewService(validate, userRepository)
+	postService := post.NewService(validate, postRepository, resourceRepository, likeRepository, commentRepository)
+	likeService := like.NewService(validate, likeRepository)
+	commentService := comment.NewService(validate, commentRepository)
 
-	// controller
-	userController := controller.NewUserController(userService)
+	// controllers
+	userController := user.NewController(userService)
+	postController := post.NewController(postService)
+	likeController := like.NewController(likeService)
+	commentController := comment.NewController(commentService)
 
-	// routes
-	userController.SetRoutes(r)
+	// Routes
+	user.InitRoutes(router, userController)
+	post.InitRoutes(router, postController)
+	like.InitRoutes(router, likeController)
+	comment.InitRoutes(router, commentController)
 
-	err := r.Run("localhost:3000")
-	helper.PanicIfError(err)
+	err := router.Run(":3000")
+	if err != nil {
+		panic(err)
+	}
 }

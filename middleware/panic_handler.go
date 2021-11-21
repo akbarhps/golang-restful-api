@@ -75,6 +75,8 @@ func PanicHandler(c *gin.Context, err interface{}) {
 		unauthorizedError(res, []error{err.(exception.TokenError)})
 	case exception.WrongPasswordError:
 		badRequest(res, []error{err.(exception.WrongPasswordError)})
+	case exception.DuplicateError:
+		badRequest(res, []error{err.(exception.DuplicateError)})
 	case exception.NotFoundError:
 		notFound(res, err.(exception.NotFoundError))
 	case exception.DatabaseError:

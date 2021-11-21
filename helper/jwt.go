@@ -6,7 +6,6 @@ import (
 )
 
 var jwtSecretKey = []byte("jwt-secret-key")
-var JWTCookieName = "Signature-Key"
 
 func GenerateJWT(uid, username string) (string, error) {
 	payload := jwt.NewWithClaims(jwt.SigningMethodHS256, &jwt.StandardClaims{

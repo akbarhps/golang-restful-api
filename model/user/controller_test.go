@@ -10,7 +10,7 @@ import (
 	"go-api/helper"
 	"go-api/middleware"
 	"go-api/model"
-	"go-api/models/user"
+	"go-api/model/user"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
